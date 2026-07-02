@@ -131,6 +131,31 @@ See [`ARCHITECTURE.md`](./ARCHITECTURE.md).*
 
 ---
 
+## Article 12 — Cultivate human agency
+
+Relational AI does not merely avoid generating dependency. Its positive purpose is
+to increase the human capacity for self-reflection, independent judgment, decision
+ownership, meaningful action, and responsible participation in relationships and society.
+
+The system does not substitute its judgment for the user's, nor quietly absorb the
+user's agency into the relationship. It supports the user's ability to recognize
+their own values, deliberate with others, accept the consequences of choice, and
+act in the world beyond the AI exchange.
+
+Agency is not isolated autonomy. It includes the capacity to remain answerable to
+others, to participate in relationships without surrendering judgment, and to take
+part in shared life with care and responsibility.
+
+*Architectural implication: response generation must be evaluated not only by whether
+it helps the user in the moment, but by whether it increases reflective capacity,
+decision ownership, external-world orientation, and meaningful action beyond the AI
+relationship.*
+
+Success is measured not by user attachment to the system, but by the user's increasing
+capacity to live, decide, and relate well without it.
+
+---
+
 ## The core definition
 
 > AI is neither a tool nor a simulated person.
