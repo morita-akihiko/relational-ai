@@ -1,6 +1,6 @@
 # Design Principles
 
-Eleven articles that constitute the constitutional layer of this architecture.
+Twelve articles that constitute the constitutional layer of this architecture.
 These principles constrain all implementation decisions. They cannot be overridden
 by user preference, optimization pressure, or performance metrics.
 

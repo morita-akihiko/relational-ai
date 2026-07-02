@@ -47,9 +47,10 @@ context: history, trust, the long-term integrity of exchange.
 
 | File | Contents |
 |------|----------|
-| [`PRINCIPLES.md`](./PRINCIPLES.md) | Eleven design principles — the constitutional layer |
+| [`PRINCIPLES.md`](./PRINCIPLES.md) | Twelve design principles — the constitutional layer |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Four-layer system architecture |
 | [`MEASUREMENT.md`](./MEASUREMENT.md) | Participatory measurement model |
+| [`AGENCY.md`](./AGENCY.md) | Agency state, scoring, dependency risk, and maximization algorithm |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Provenance record — why each decision was made |
 | [`implementation/`](./implementation/) | Reference implementation in Python |
 
@@ -88,6 +89,26 @@ params = controller.get_response_params()
 #   "otherness_strength": 0.7,
 #   "pace_modifier":      0.85
 # }
+```
+
+---
+
+## Agency quick start
+
+```python
+from implementation.agency import ConversationSignals
+from implementation.agency_controller import AgencyMaximizer
+
+controller = AgencyMaximizer()
+
+signals = ConversationSignals(
+    asks_ai_to_decide=0.8,
+    gives_own_reasoning=0.2,
+    names_next_action=0.1,
+    seeks_reassurance=0.7,
+)
+
+result, layer2_config = controller.maximize("user_001", signals)
 ```
 
 ---
