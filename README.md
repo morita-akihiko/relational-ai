@@ -51,6 +51,8 @@ context: history, trust, the long-term integrity of exchange.
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Four-layer system architecture |
 | [`MEASUREMENT.md`](./MEASUREMENT.md) | Participatory measurement model |
 | [`AGENCY.md`](./AGENCY.md) | Agency state, scoring, dependency risk, and maximization algorithm |
+| [`POC_EXPERIMENT.md`](./POC_EXPERIMENT.md) | First executable PoC experiment for agency without increased dependency |
+| [`PILOT_APP.md`](./PILOT_APP.md) | Minimal Streamlit app for a human pilot of the PoC |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Provenance record — why each decision was made |
 | [`implementation/`](./implementation/) | Reference implementation in Python |
 
@@ -109,6 +111,18 @@ signals = ConversationSignals(
 )
 
 result, layer2_config = controller.maximize("user_001", signals)
+```
+
+Run the first executable PoC experiment:
+
+```bash
+python -m implementation.poc_experiment
+```
+
+Run the human pilot app:
+
+```bash
+streamlit run streamlit_app.py
 ```
 
 ---
