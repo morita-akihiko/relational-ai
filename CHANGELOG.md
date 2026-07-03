@@ -29,6 +29,48 @@ This is not a conventional changelog. It is a genealogy of values.
 
 ---
 
+## [v0.1.0] 2026-07-03 – First executable human pilot
+
+**Layer affected:** [1 / 2 / 3 / 4]
+
+**What changed:**  
+Relational AI evolved from a conceptual architecture into an executable experimental system with a human-usable prototype, including:
+- Article 12: Cultivate Human Agency
+- Agency operationalization and scoring
+- Executable PoC experiments
+- Streamlit-based Human Pilot Application
+- Version tag `v0.1.0`
+
+**Why:**  
+The project reached the point where its central question could move from theoretical feasibility to empirical investigation.
+
+For the first time, the project exists as:
+
+- a philosophy,
+- an architecture,
+- a computational model,
+- an executable experiment,
+- and a human-usable prototype.
+
+The next question is no longer:
+
+> "Can this be built?"
+
+The next question is:
+
+> "How do human beings change through relationship with this system?"
+
+**Whose concern:**  
+Raised by Akihiko Morita through the development of Relational AI and the first human pilot experience.
+
+**Values at stake:**  
+Human agency, relationality, reflective capacity, responsible participation, and the possibility of designing conversational AI that strengthens rather than diminishes human flourishing.
+
+**Authority to revise:**  
+Project maintainer (Akihiko Morita) and future research collaborators.
+
+---
+
 ## v0.1 — April 2026 — Initial design
 
 **Author:** Akihiko Morita  
