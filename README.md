@@ -1,5 +1,13 @@
 # Relational AI
 
+## 🚀 Live Demo
+
+**Executable Human Pilot (Version 0.1.0)**
+
+https://relational-ai-human-pilot.streamlit.app/
+
+---
+
 **Design principles and implementation framework for AI that emerges through relationship.**
 
 ---
