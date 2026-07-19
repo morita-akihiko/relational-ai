@@ -1,15 +1,17 @@
 """Streamlit interface for the Relational AI MVP.
 
-Phase 1 uses deterministic placeholder content so the complete interaction can be
-reviewed before model integration. Existing research and agency modules remain intact.
+Live responses use the OpenAI Responses API when configured. Deterministic Phase 1
+content remains available as a transparent fallback.
 """
 
 from __future__ import annotations
 
 from copy import deepcopy
+from html import escape
 
 import streamlit as st
 
+from implementation.openai_client import OpenAIConfigurationError, generate_response
 from implementation.placeholder_experience import (
     DEFAULT_PARTICIPATION,
     DEMO_SCENARIO,
@@ -18,6 +20,7 @@ from implementation.placeholder_experience import (
     placeholder_relational_response,
     relational_opening,
 )
+from implementation.prompts import CONVENTIONAL_DEMO_INSTRUCTIONS, RELATIONAL_INSTRUCTIONS
 
 
 SCREENS = ("landing", "conversation", "participation", "conclusion")
@@ -37,6 +40,9 @@ def init_state() -> None:
         "messages": [],
         "response_count": 0,
         "participation": deepcopy(DEFAULT_PARTICIPATION),
+        "conventional_response": "",
+        "generation_source": "placeholder",
+        "generation_notice": "",
         "card": {
             "what_matters": "Choosing growth without losing sight of the people and commitments I care for.",
             "connected_to": "My partner, the future team, and my current responsibilities.",
@@ -56,6 +62,9 @@ def reset_experience() -> None:
         "messages",
         "response_count",
         "participation",
+        "conventional_response",
+        "generation_source",
+        "generation_notice",
         "card",
     ):
         st.session_state.pop(key, None)
@@ -125,18 +134,64 @@ def render_sidebar() -> None:
         st.divider()
         mode_label = "Demo Mode" if st.session_state.mode == "demo" else "Relational Mode"
         st.caption(f"Current experience: {mode_label}")
-        st.caption("Phase 1 prototype · placeholder responses")
+        source = (
+            "OpenAI Responses API"
+            if st.session_state.generation_source == "live"
+            else "Placeholder fallback"
+        )
+        st.caption(f"Response source: {source}")
         if st.session_state.screen != "landing" and st.button("Start over", use_container_width=True):
             reset_experience()
             st.rerun()
 
 
+def conversation_input(messages: list[dict[str, str]] | None = None) -> list[dict[str, str]]:
+    history = [{"role": "user", "content": st.session_state.situation}]
+    history.extend(messages or [])
+    return history
+
+
+def live_or_placeholder(
+    instructions: str,
+    messages: list[dict[str, str]],
+    fallback: str,
+) -> str:
+    try:
+        response = generate_response(instructions, messages)
+        st.session_state.generation_source = "live"
+        st.session_state.generation_notice = ""
+        return response
+    except OpenAIConfigurationError:
+        st.session_state.generation_source = "placeholder"
+        st.session_state.generation_notice = (
+            "Live generation is not configured. This response uses the Phase 1 placeholder."
+        )
+    except Exception as exc:  # The MVP remains demonstrable if the API is temporarily unavailable.
+        st.session_state.generation_source = "placeholder"
+        st.session_state.generation_notice = (
+            f"Live generation was unavailable ({type(exc).__name__}). A placeholder is shown."
+        )
+    return fallback
+
+
 def begin_experience(mode: str, situation: str) -> None:
     st.session_state.mode = mode
     st.session_state.situation = situation.strip() or DEMO_SCENARIO
+    initial_input = conversation_input()
+    opening = live_or_placeholder(
+        RELATIONAL_INSTRUCTIONS,
+        initial_input,
+        relational_opening(st.session_state.situation),
+    )
     st.session_state.messages = [
-        {"role": "assistant", "content": relational_opening(st.session_state.situation)}
+        {"role": "assistant", "content": opening}
     ]
+    if mode == "demo":
+        st.session_state.conventional_response = live_or_placeholder(
+            CONVENTIONAL_DEMO_INSTRUCTIONS,
+            initial_input,
+            conventional_demo_response(),
+        )
     st.session_state.response_count = 0
     st.session_state.screen = "conversation"
 
@@ -177,11 +232,13 @@ def render_landing() -> None:
     primary, secondary, space = st.columns([1.35, 1, 2])
     with primary:
         if st.button("Begin a conversation", type="primary", use_container_width=True):
-            begin_experience("normal", situation)
+            with st.spinner("Opening a brief relational conversation…"):
+                begin_experience("normal", situation)
             st.rerun()
     with secondary:
         if st.button("Open Demo Mode", use_container_width=True):
-            begin_experience("demo", DEMO_SCENARIO)
+            with st.spinner("Generating two orientations to the same situation…"):
+                begin_experience("demo", DEMO_SCENARIO)
             st.rerun()
 
     st.markdown(
@@ -199,7 +256,7 @@ def render_demo_comparison() -> None:
             f"""
             <div class="mode-card">
               <div class="mode-label">Conventional AI</div>
-              <div class="mode-copy">{conventional_demo_response()}</div>
+              <div class="mode-copy">{escape(st.session_state.conventional_response)}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -209,7 +266,7 @@ def render_demo_comparison() -> None:
             f"""
             <div class="mode-card relational">
               <div class="mode-label">Relational AI</div>
-              <div class="mode-copy">{st.session_state.messages[0]['content']}</div>
+              <div class="mode-copy">{escape(st.session_state.messages[0]['content'])}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -230,6 +287,8 @@ def render_conversation() -> None:
         '<div class="quiet-note">This conversation will pause when a meaningful next participation has emerged.</div>',
         unsafe_allow_html=True,
     )
+    if st.session_state.generation_notice:
+        st.warning(st.session_state.generation_notice)
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -239,7 +298,12 @@ def render_conversation() -> None:
         response = st.chat_input("Respond in your own words")
         if response:
             st.session_state.messages.append({"role": "user", "content": response})
-            reply = placeholder_relational_response(st.session_state.response_count)
+            with st.spinner("Noticing what this connects to…"):
+                reply = live_or_placeholder(
+                    RELATIONAL_INSTRUCTIONS,
+                    conversation_input(st.session_state.messages),
+                    placeholder_relational_response(st.session_state.response_count),
+                )
             st.session_state.messages.append({"role": "assistant", "content": reply})
             st.session_state.response_count += 1
             st.rerun()
