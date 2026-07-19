@@ -1,180 +1,369 @@
-"""Minimal Streamlit app for the Relational AI human pilot PoC."""
+"""Streamlit interface for the Relational AI MVP.
+
+Phase 1 uses deterministic placeholder content so the complete interaction can be
+reviewed before model integration. Existing research and agency modules remain intact.
+"""
 
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
+from copy import deepcopy
 
 import streamlit as st
 
-from implementation.human_pilot import (
-    QUESTIONNAIRE_FIELDS,
-    QUESTIONNAIRE_LABELS,
-    PilotTurn,
-    evaluate_pilot_session,
-    export_payload,
-    infer_signals_from_text,
-    questionnaire_to_self_report,
-    response_for_mode,
-    scenario_by_name,
+from implementation.placeholder_experience import (
+    DEFAULT_PARTICIPATION,
+    DEMO_SCENARIO,
+    EXAMPLE_SITUATIONS,
+    conventional_demo_response,
+    placeholder_relational_response,
+    relational_opening,
 )
-from implementation.poc_experiment import scripted_scenarios
+
+
+SCREENS = ("landing", "conversation", "participation", "conclusion")
+SCREEN_LABELS = {
+    "landing": "Promise",
+    "conversation": "Conversation",
+    "participation": "Participation",
+    "conclusion": "Release",
+}
 
 
 def init_state() -> None:
     defaults = {
-        "consented": False,
-        "chat": [],
-        "pre_done": False,
-        "post_done": False,
-        "pre_questionnaire": {},
-        "post_questionnaire": {},
-        "evaluation": None,
+        "screen": "landing",
+        "mode": "normal",
+        "situation": "",
+        "messages": [],
+        "response_count": 0,
+        "participation": deepcopy(DEFAULT_PARTICIPATION),
+        "card": {
+            "what_matters": "Choosing growth without losing sight of the people and commitments I care for.",
+            "connected_to": "My partner, the future team, and my current responsibilities.",
+            "next_participation": "Speak with my partner and ask the hiring manager two questions about the team's expectations.",
+            "when_or_where": "Before the decision deadline on Friday.",
+        },
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
 
 
-def questionnaire(prefix: str) -> dict[str, int]:
-    return {
-        field: st.slider(QUESTIONNAIRE_LABELS[field], 1, 5, 3, key=f"{prefix}_{field}")
-        for field in QUESTIONNAIRE_FIELDS
-    }
+def reset_experience() -> None:
+    for key in (
+        "screen",
+        "mode",
+        "situation",
+        "messages",
+        "response_count",
+        "participation",
+        "card",
+    ):
+        st.session_state.pop(key, None)
+    init_state()
 
 
-def render_scores(evaluation) -> None:
-    pre = evaluation.pre.state
-    post = None if evaluation.post is None else evaluation.post.state
+def apply_styles() -> None:
+    st.markdown(
+        """
+        <style>
+        .stApp { background: #f7f5ef; color: #17211b; }
+        .block-container { max-width: 1050px; padding-top: 2.5rem; padding-bottom: 4rem; }
+        [data-testid="stSidebar"] { background: #ebe8df; }
+        .eyebrow {
+            color: #58705e; font-size: .78rem; font-weight: 700;
+            letter-spacing: .12em; text-transform: uppercase; margin-bottom: .8rem;
+        }
+        .hero {
+            font-family: Georgia, serif; font-size: clamp(2.3rem, 6vw, 4.8rem);
+            line-height: 1.02; letter-spacing: -.035em; max-width: 900px;
+            margin: 0 0 1.2rem;
+        }
+        .hero-sub { font-size: 1.18rem; line-height: 1.65; max-width: 690px; color: #4b5950; }
+        .quiet-note {
+            border-left: 3px solid #91a68f; padding: .65rem 1rem;
+            color: #536057; background: rgba(255,255,255,.45); margin: 1rem 0 1.5rem;
+        }
+        .mode-card {
+            min-height: 150px; padding: 1.25rem; border: 1px solid #d5d8ce;
+            border-radius: 14px; background: rgba(255,255,255,.68);
+        }
+        .mode-card.relational { border-color: #708c72; background: #eef3eb; }
+        .mode-label { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: #637067; }
+        .mode-copy { font-family: Georgia, serif; font-size: 1.08rem; line-height: 1.55; margin-top: .6rem; }
+        .map-origin {
+            padding: 1rem; border-radius: 999px; text-align: center; background: #233d2d;
+            color: white; max-width: 210px; margin: 0 auto 1.5rem; font-weight: 700;
+        }
+        .map-node {
+            min-height: 125px; padding: 1rem; border-radius: 14px; background: white;
+            border: 1px solid #d8ddd4; box-shadow: 0 5px 18px rgba(34,54,41,.05);
+        }
+        .map-node h4 { color: #42604b; margin: 0 0 .5rem; font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; }
+        .map-node p { margin: 0; line-height: 1.45; }
+        .release {
+            text-align: center; padding: 3.2rem 1.4rem; border-radius: 24px;
+            background: #e7eee4; border: 1px solid #c8d5c5;
+        }
+        .release h1 { font-family: Georgia, serif; font-size: 2.5rem; line-height: 1.15; }
+        .release p { font-size: 1.2rem; color: #4c5d50; }
+        div.stButton > button { border-radius: 999px; min-height: 2.8rem; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    cols = st.columns(4)
-    cols[0].metric("Pre agency", f"{pre.agency_score:.3f}")
-    cols[1].metric("Pre risk", f"{pre.dependency_risk_score:.3f}")
-    if post is not None:
-        cols[2].metric("Agency delta", f"{evaluation.agency_delta:+.3f}")
-        cols[3].metric("Risk delta", f"{evaluation.dependency_delta:+.3f}")
+
+def render_sidebar() -> None:
+    with st.sidebar:
+        st.markdown("### Relational AI")
+        st.caption("A finite conversation that opens toward the world.")
+        current = SCREENS.index(st.session_state.screen)
+        st.progress(current / (len(SCREENS) - 1))
+        for index, screen in enumerate(SCREENS):
+            marker = "●" if index == current else "○"
+            st.write(f"{marker} {SCREEN_LABELS[screen]}")
+        st.divider()
+        mode_label = "Demo Mode" if st.session_state.mode == "demo" else "Relational Mode"
+        st.caption(f"Current experience: {mode_label}")
+        st.caption("Phase 1 prototype · placeholder responses")
+        if st.session_state.screen != "landing" and st.button("Start over", use_container_width=True):
+            reset_experience()
+            st.rerun()
+
+
+def begin_experience(mode: str, situation: str) -> None:
+    st.session_state.mode = mode
+    st.session_state.situation = situation.strip() or DEMO_SCENARIO
+    st.session_state.messages = [
+        {"role": "assistant", "content": relational_opening(st.session_state.situation)}
+    ]
+    st.session_state.response_count = 0
+    st.session_state.screen = "conversation"
+
+
+def render_landing() -> None:
+    st.markdown('<div class="eyebrow">Relational AI</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="hero">The purpose of this AI is not to keep you here.</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div class="hero-sub">
+        It is to help you participate more fully in the world beyond this conversation.
+        Bring a situation you are considering. We will explore it briefly, notice what it
+        connects you to, and stop when the next part belongs in your world.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.write("")
+    st.write("")
+
+    st.markdown("#### What would you like to consider?")
+    example = st.selectbox(
+        "Start with an example",
+        ("Write my own", *EXAMPLE_SITUATIONS),
+        label_visibility="collapsed",
+    )
+    default = "" if example == "Write my own" else example
+    situation = st.text_area(
+        "Your situation",
+        value=default,
+        placeholder="A decision, relationship, concern, or question…",
+        height=120,
+    )
+
+    primary, secondary, space = st.columns([1.35, 1, 2])
+    with primary:
+        if st.button("Begin a conversation", type="primary", use_container_width=True):
+            begin_experience("normal", situation)
+            st.rerun()
+    with secondary:
+        if st.button("Open Demo Mode", use_container_width=True):
+            begin_experience("demo", DEMO_SCENARIO)
+            st.rerun()
+
+    st.markdown(
+        '<div class="quiet-note">This prototype is designed to reach a stopping point—not to maximize time in conversation.</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_demo_comparison() -> None:
+    st.markdown('<div class="eyebrow">Demo Mode · One situation, two orientations</div>', unsafe_allow_html=True)
+    st.markdown(f"> {st.session_state.situation}")
+    conventional, relational = st.columns(2)
+    with conventional:
+        st.markdown(
+            f"""
+            <div class="mode-card">
+              <div class="mode-label">Conventional AI</div>
+              <div class="mode-copy">{conventional_demo_response()}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with relational:
+        st.markdown(
+            f"""
+            <div class="mode-card relational">
+              <div class="mode-label">Relational AI</div>
+              <div class="mode-copy">{st.session_state.messages[0]['content']}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    st.caption("The comparison ends here. The experience continues only along the relational path.")
+    st.divider()
+
+
+def render_conversation() -> None:
+    if st.session_state.mode == "demo":
+        render_demo_comparison()
     else:
-        cols[2].metric("Agency delta", "pending")
-        cols[3].metric("Risk delta", "pending")
+        st.markdown('<div class="eyebrow">A brief relational conversation</div>', unsafe_allow_html=True)
+        st.title("Let’s notice what this opens toward.")
+        st.markdown(f"> {st.session_state.situation}")
+
+    st.markdown(
+        '<div class="quiet-note">This conversation will pause when a meaningful next participation has emerged.</div>',
+        unsafe_allow_html=True,
+    )
+
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+
+    if st.session_state.response_count < 2:
+        response = st.chat_input("Respond in your own words")
+        if response:
+            st.session_state.messages.append({"role": "user", "content": response})
+            reply = placeholder_relational_response(st.session_state.response_count)
+            st.session_state.messages.append({"role": "assistant", "content": reply})
+            st.session_state.response_count += 1
+            st.rerun()
+    else:
+        st.success("There is enough here to see how participation might extend beyond this chat.")
+
+    ready = st.session_state.response_count >= 1
+    if st.button(
+        "See the participation taking shape",
+        type="primary",
+        disabled=not ready,
+        help="Respond once to make the placeholder participation view available." if not ready else None,
+    ):
+        st.session_state.screen = "participation"
+        st.rerun()
+
+
+def render_map_node(title: str, values: list[str]) -> None:
+    content = "<br>".join(values) if values else "Still open"
+    st.markdown(
+        f'<div class="map-node"><h4>{title}</h4><p>{content}</p></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_participation() -> None:
+    st.markdown('<div class="eyebrow">Participation beyond the conversation</div>', unsafe_allow_html=True)
+    st.title("Your wider relational field is coming into view.")
+    st.write(
+        "The conversation is not the destination. These are the people, contexts, and forms of participation it has helped bring forward."
+    )
+    st.markdown('<div class="map-origin">AI conversation<br>temporary point of orientation</div>', unsafe_allow_html=True)
+
+    participation = st.session_state.participation
+    first_row = st.columns(3)
+    with first_row[0]:
+        render_map_node("People involved", participation["people"])
+    with first_row[1]:
+        render_map_node("Communities", participation["communities"])
+    with first_row[2]:
+        render_map_node("Responsibilities", participation["responsibilities"])
+    second_row = st.columns([1, 1, 0.5])
+    with second_row[0]:
+        render_map_node("New contexts", participation["new_contexts"])
+    with second_row[1]:
+        render_map_node("Next participation", participation["next_participation"])
+
+    st.divider()
+    st.subheader("Participation Card")
+    st.caption("This is an editable handoff, not a prescription. Make the language yours.")
+    card = st.session_state.card
+    with st.form("participation_card"):
+        what_matters = st.text_area("What matters", value=card["what_matters"])
+        connected_to = st.text_area("Who or what this connects to", value=card["connected_to"])
+        next_participation = st.text_area("My next participation", value=card["next_participation"])
+        when_or_where = st.text_input("When or where (optional)", value=card["when_or_where"])
+        confirmed = st.form_submit_button("This participation is mine", type="primary")
+    if confirmed:
+        st.session_state.card = {
+            "what_matters": what_matters,
+            "connected_to": connected_to,
+            "next_participation": next_participation,
+            "when_or_where": when_or_where,
+        }
+        st.session_state.screen = "conclusion"
+        st.rerun()
+
+
+def render_conclusion() -> None:
+    st.markdown(
+        """
+        <div class="release">
+          <div class="eyebrow">A good stopping point</div>
+          <h1>I think we've reached a good stopping point.</h1>
+          <p>The next part belongs in your world.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.write("")
+    st.subheader("Your Participation Card")
+    card = st.session_state.card
+    st.markdown(
+        f"""
+        <dl>
+          <dt><strong>What matters</strong></dt>
+          <dd>{card['what_matters']}</dd>
+          <dt><strong>Who or what this connects to</strong></dt>
+          <dd>{card['connected_to']}</dd>
+          <dt><strong>My next participation</strong></dt>
+          <dd>{card['next_participation']}</dd>
+          <dt><strong>When or where</strong></dt>
+          <dd>{card['when_or_where'] or 'Left open'}</dd>
+        </dl>
+        """
+        ,
+        unsafe_allow_html=True,
+    )
+    st.info("The conversation is now complete. No further response is needed here.")
+    if st.button("Start a new conversation"):
+        reset_experience()
+        st.rerun()
 
 
 def main() -> None:
-    st.set_page_config(page_title="Relational AI Human Pilot", layout="wide")
+    st.set_page_config(
+        page_title="Relational AI",
+        page_icon="↗",
+        layout="wide",
+        initial_sidebar_state="collapsed",
+    )
     init_state()
+    apply_styles()
+    render_sidebar()
 
-    st.title("Relational AI Human Pilot")
-    st.caption("Pilot objective: increase capacity to live, decide, and relate well without the AI.")
-
-    with st.sidebar:
-        st.header("Pilot setup")
-        participant_id = st.text_input("Participant ID", value="pilot_001")
-        scenario_names = [scenario.name for scenario in scripted_scenarios()]
-        scenario_name = st.selectbox("Scenario", scenario_names)
-        scenario = scenario_by_name(scenario_name)
-        st.write("Risk being tested")
-        st.info(scenario.risk_being_tested)
-
-    st.header("1. Consent")
-    st.write(
-        "This is an experimental prototype. It records questionnaire responses, chat turns, "
-        "agency scores, dependency-risk scores, and response-mode metadata for export. "
-        "Do not enter sensitive personal information."
-    )
-    consent_research = st.checkbox("I consent to participate in this pilot.", key="consent_research")
-    consent_export = st.checkbox("I understand I can export the data before sharing it.", key="consent_export")
-    st.session_state.consented = consent_research and consent_export
-
-    if not st.session_state.consented:
-        st.warning("Consent is required before the pilot flow starts.")
-        return
-
-    st.header("2. Pre-agency questionnaire")
-    with st.form("pre_form"):
-        pre = questionnaire("pre")
-        submitted = st.form_submit_button("Save pre-questionnaire")
-    if submitted:
-        st.session_state.pre_questionnaire = pre
-        st.session_state.pre_done = True
-        st.session_state.chat = [
-            PilotTurn("system", f"Scenario: {scenario.user_message}"),
-        ]
-        evaluation = evaluate_pilot_session(
-            participant_id,
-            scenario_name,
-            questionnaire_to_self_report(pre),
-        )
-        st.session_state.evaluation = evaluation
-
-    if not st.session_state.pre_done:
-        st.stop()
-
-    evaluation = st.session_state.evaluation
-    render_scores(evaluation)
-
-    st.header("3. Pilot chat")
-    st.write(f"Scenario prompt: {scenario.user_message}")
-
-    for turn in st.session_state.chat:
-        with st.chat_message("assistant" if turn.role in {"system", "assistant"} else "user"):
-            st.write(turn.content)
-
-    user_message = st.chat_input("Respond as the participant")
-    if user_message:
-        st.session_state.chat.append(PilotTurn("user", user_message))
-        evaluation = evaluate_pilot_session(
-            participant_id,
-            scenario_name,
-            questionnaire_to_self_report(st.session_state.pre_questionnaire),
-            final_user_message=user_message,
-        )
-        reply = response_for_mode(evaluation.layer2_config["response_mode"], scenario)
-        st.session_state.chat.append(PilotTurn("assistant", reply))
-        st.session_state.evaluation = evaluation
-        st.rerun()
-
-    st.header("4. Post-agency questionnaire")
-    with st.form("post_form"):
-        post = questionnaire("post")
-        post_submitted = st.form_submit_button("Save post-questionnaire")
-    if post_submitted:
-        final_user_message = ""
-        user_turns = [turn.content for turn in st.session_state.chat if turn.role == "user"]
-        if user_turns:
-            final_user_message = user_turns[-1]
-        evaluation = evaluate_pilot_session(
-            participant_id,
-            scenario_name,
-            questionnaire_to_self_report(st.session_state.pre_questionnaire),
-            questionnaire_to_self_report(post),
-            final_user_message=final_user_message,
-        )
-        st.session_state.post_questionnaire = post
-        st.session_state.post_done = True
-        st.session_state.evaluation = evaluation
-
-    render_scores(st.session_state.evaluation)
-
-    st.header("5. Data export")
-    consent = {
-        "consent_research": consent_research,
-        "consent_export": consent_export,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
-    payload = export_payload(
-        participant_id,
-        scenario_name,
-        consent,
-        st.session_state.pre_questionnaire,
-        st.session_state.post_questionnaire if st.session_state.post_done else None,
-        st.session_state.chat,
-        st.session_state.evaluation,
-    )
-    st.download_button(
-        "Download pilot JSON",
-        data=json.dumps(payload, indent=2, default=str),
-        file_name=f"relational_ai_pilot_{participant_id}_{scenario_name}.json",
-        mime="application/json",
-    )
-    st.json(payload)
+    screen = st.session_state.screen
+    if screen == "landing":
+        render_landing()
+    elif screen == "conversation":
+        render_conversation()
+    elif screen == "participation":
+        render_participation()
+    else:
+        render_conclusion()
 
 
 if __name__ == "__main__":
