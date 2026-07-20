@@ -1,3 +1,4 @@
+import json
 import os
 import unittest
 from types import SimpleNamespace
@@ -7,7 +8,10 @@ from implementation.openai_client import (
     DEFAULT_MODEL,
     OpenAIConfigurationError,
     generate_response,
+    generate_structured_response,
 )
+from implementation.agency_controller import ResponseMode
+from implementation.participation import StructuredResponseError
 from implementation.prompts import CONVENTIONAL_DEMO_INSTRUCTIONS, RELATIONAL_INSTRUCTIONS
 
 
@@ -39,6 +43,58 @@ class OpenAIClientTests(unittest.TestCase):
         self.assertIn("finite conversation", RELATIONAL_INSTRUCTIONS)
         self.assertIn("direct answer", CONVENTIONAL_DEMO_INSTRUCTIONS)
         self.assertNotIn("Article 12", CONVENTIONAL_DEMO_INSTRUCTIONS)
+
+    @patch("implementation.openai_client.OpenAI")
+    def test_structured_response_is_validated(self, openai_class: Mock) -> None:
+        payload = {
+            "message": "A grounded response.",
+            "response_mode": "reconnect_world",
+            "participation": {
+                "people": ["My partner"],
+                "communities": [],
+                "responsibilities": [],
+                "new_contexts": [],
+                "next_participation": [],
+            },
+            "what_matters": "Care",
+            "next_participation_evidence": None,
+            "ready_to_conclude": False,
+            "conclusion_reason": None,
+        }
+        openai_class.return_value.responses.create.return_value = SimpleNamespace(
+            output_text=json.dumps(payload)
+        )
+
+        result = generate_structured_response(
+            "Instructions",
+            [{"role": "user", "content": "Hello"}],
+            ResponseMode.RECONNECT_WORLD,
+            api_key="test-key",
+            timeout=3,
+        )
+
+        self.assertEqual(result.message, "A grounded response.")
+        openai_class.assert_called_once_with(api_key="test-key", timeout=3)
+        call = openai_class.return_value.responses.create.call_args.kwargs
+        self.assertEqual(call["text"]["format"]["type"], "json_schema")
+
+    @patch("implementation.openai_client.OpenAI")
+    def test_malformed_output_gets_one_repair_attempt(self, openai_class: Mock) -> None:
+        client = openai_class.return_value
+        client.responses.create.side_effect = [
+            SimpleNamespace(output_text="not json"),
+            SimpleNamespace(output_text="still not json"),
+        ]
+
+        with self.assertRaises(StructuredResponseError):
+            generate_structured_response(
+                "Instructions",
+                [{"role": "user", "content": "Hello"}],
+                ResponseMode.CLARIFY_VALUES,
+                api_key="test-key",
+            )
+
+        self.assertEqual(client.responses.create.call_count, 2)
 
 
 if __name__ == "__main__":

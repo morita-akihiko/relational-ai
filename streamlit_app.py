@@ -6,21 +6,19 @@ content remains available as a transparent fallback.
 
 from __future__ import annotations
 
-from copy import deepcopy
 from html import escape
 
 import streamlit as st
 
+from implementation.conversation import run_relational_turn
 from implementation.openai_client import OpenAIConfigurationError, generate_response
+from implementation.participation import ParticipationState
 from implementation.placeholder_experience import (
-    DEFAULT_PARTICIPATION,
     DEMO_SCENARIO,
     EXAMPLE_SITUATIONS,
     conventional_demo_response,
-    placeholder_relational_response,
-    relational_opening,
 )
-from implementation.prompts import CONVENTIONAL_DEMO_INSTRUCTIONS, RELATIONAL_INSTRUCTIONS
+from implementation.prompts import CONVENTIONAL_DEMO_INSTRUCTIONS
 
 
 SCREENS = ("landing", "conversation", "participation", "conclusion")
@@ -39,15 +37,18 @@ def init_state() -> None:
         "situation": "",
         "messages": [],
         "response_count": 0,
-        "participation": deepcopy(DEFAULT_PARTICIPATION),
+        "participation": ParticipationState(),
+        "what_matters": None,
+        "next_participation_evidence": None,
+        "ready_to_conclude": False,
         "conventional_response": "",
         "generation_source": "placeholder",
         "generation_notice": "",
         "card": {
-            "what_matters": "Choosing growth without losing sight of the people and commitments I care for.",
-            "connected_to": "My partner, the future team, and my current responsibilities.",
-            "next_participation": "Speak with my partner and ask the hiring manager two questions about the team's expectations.",
-            "when_or_where": "Before the decision deadline on Friday.",
+            "what_matters": "",
+            "connected_to": "",
+            "next_participation": "",
+            "when_or_where": "",
         },
     }
     for key, value in defaults.items():
@@ -62,6 +63,9 @@ def reset_experience() -> None:
         "messages",
         "response_count",
         "participation",
+        "what_matters",
+        "next_participation_evidence",
+        "ready_to_conclude",
         "conventional_response",
         "generation_source",
         "generation_notice",
@@ -178,20 +182,28 @@ def begin_experience(mode: str, situation: str) -> None:
     st.session_state.mode = mode
     st.session_state.situation = situation.strip() or DEMO_SCENARIO
     initial_input = conversation_input()
-    opening = live_or_placeholder(
-        RELATIONAL_INSTRUCTIONS,
-        initial_input,
-        relational_opening(st.session_state.situation),
-    )
-    st.session_state.messages = [
-        {"role": "assistant", "content": opening}
-    ]
     if mode == "demo":
         st.session_state.conventional_response = live_or_placeholder(
             CONVENTIONAL_DEMO_INSTRUCTIONS,
             initial_input,
             conventional_demo_response(),
         )
+    opening = run_relational_turn(
+        situation=st.session_state.situation,
+        messages=initial_input,
+        participation=ParticipationState(),
+        what_matters=None,
+        next_participation_evidence=None,
+        response_cycle=0,
+        user_reply_count=0,
+    )
+    st.session_state.messages = [{"role": "assistant", "content": opening.message}]
+    st.session_state.participation = opening.participation
+    st.session_state.what_matters = opening.what_matters
+    st.session_state.next_participation_evidence = opening.next_participation_evidence
+    st.session_state.ready_to_conclude = opening.ready_to_conclude
+    st.session_state.generation_source = opening.generation_source
+    st.session_state.generation_notice = opening.generation_notice
     st.session_state.response_count = 0
     st.session_state.screen = "conversation"
 
@@ -294,29 +306,52 @@ def render_conversation() -> None:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
-    if st.session_state.response_count < 2:
+    if not st.session_state.ready_to_conclude:
         response = st.chat_input("Respond in your own words")
         if response:
             st.session_state.messages.append({"role": "user", "content": response})
             with st.spinner("Noticing what this connects to…"):
-                reply = live_or_placeholder(
-                    RELATIONAL_INSTRUCTIONS,
-                    conversation_input(st.session_state.messages),
-                    placeholder_relational_response(st.session_state.response_count),
+                turn = run_relational_turn(
+                    situation=st.session_state.situation,
+                    messages=conversation_input(st.session_state.messages),
+                    participation=st.session_state.participation,
+                    what_matters=st.session_state.what_matters,
+                    next_participation_evidence=st.session_state.next_participation_evidence,
+                    response_cycle=st.session_state.response_count + 1,
+                    user_reply_count=st.session_state.response_count + 1,
                 )
-            st.session_state.messages.append({"role": "assistant", "content": reply})
+            st.session_state.messages.append({"role": "assistant", "content": turn.message})
+            st.session_state.participation = turn.participation
+            st.session_state.what_matters = turn.what_matters
+            st.session_state.next_participation_evidence = turn.next_participation_evidence
+            st.session_state.ready_to_conclude = turn.ready_to_conclude
+            st.session_state.generation_source = turn.generation_source
+            st.session_state.generation_notice = turn.generation_notice
             st.session_state.response_count += 1
             st.rerun()
     else:
         st.success("There is enough here to see how participation might extend beyond this chat.")
 
-    ready = st.session_state.response_count >= 1
+    ready = st.session_state.ready_to_conclude
     if st.button(
         "See the participation taking shape",
         type="primary",
         disabled=not ready,
-        help="Respond once to make the placeholder participation view available." if not ready else None,
+        help="Continue until a next participation is grounded in your own words." if not ready else None,
     ):
+        participation = st.session_state.participation
+        connected = [
+            *participation.people,
+            *participation.communities,
+            *participation.responsibilities,
+            *participation.new_contexts,
+        ]
+        st.session_state.card = {
+            "what_matters": st.session_state.what_matters or "",
+            "connected_to": ", ".join(connected),
+            "next_participation": ", ".join(participation.next_participation),
+            "when_or_where": "",
+        }
         st.session_state.screen = "participation"
         st.rerun()
 
@@ -337,7 +372,7 @@ def render_participation() -> None:
     )
     st.markdown('<div class="map-origin">AI conversation<br>temporary point of orientation</div>', unsafe_allow_html=True)
 
-    participation = st.session_state.participation
+    participation = st.session_state.participation.as_dict()
     first_row = st.columns(3)
     with first_row[0]:
         render_map_node("People involved", participation["people"])

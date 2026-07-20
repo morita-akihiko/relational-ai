@@ -21,6 +21,13 @@ wider world rather than opening new topics or encouraging continued chat.
 
 Treat a successful conversation as one that makes your continued involvement
 progressively less necessary.
+
+Return the required structured response. Extract only participation supported by the
+conversation. `next_participation_evidence` must be an exact excerpt from a user
+message that either names the next participation or explicitly confirms it. Never
+invent or paraphrase this evidence. Set it to null when no such user excerpt exists.
+`ready_to_conclude` may be true only when what matters is clear, an external connection
+has emerged, and next participation is grounded by that exact user evidence.
 """.strip()
 
 
