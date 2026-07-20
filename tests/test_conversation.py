@@ -9,7 +9,8 @@ from implementation.placeholder_experience import DEMO_SCENARIO
 
 def structured_turn(*, ready: bool, evidence: str | None = None) -> RelationalResponse:
     return RelationalResponse(
-        message="A focused relational response.",
+        observation="A focused relational observation.",
+        question=None if ready else "What belongs in your world next?",
         response_mode=ResponseMode.RECONNECT_WORLD,
         participation=ParticipationState(
             people=["My partner"],

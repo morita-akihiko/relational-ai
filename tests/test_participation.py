@@ -2,6 +2,8 @@ import unittest
 
 from implementation.agency_controller import ResponseMode
 from implementation.participation import (
+    OBSERVATION_MAX_WORDS,
+    QUESTION_MAX_WORDS,
     ParticipationState,
     RelationalResponse,
     StructuredResponseError,
@@ -14,7 +16,8 @@ class ParticipationTests(unittest.TestCase):
     def test_structured_response_validates_required_shape(self) -> None:
         response = RelationalResponse.from_dict(
             {
-                "message": "A grounded response.",
+                "observation": "A grounded observation.",
+                "question": "Who else belongs in this situation?",
                 "response_mode": "reconnect_world",
                 "participation": {
                     "people": ["My partner"],
@@ -35,7 +38,63 @@ class ParticipationTests(unittest.TestCase):
 
     def test_structured_response_rejects_missing_and_unknown_fields(self) -> None:
         with self.assertRaises(StructuredResponseError):
-            RelationalResponse.from_dict({"message": "Incomplete"})
+            RelationalResponse.from_dict({"observation": "Incomplete"})
+
+    def test_hard_word_caps_reject_only_overlong_turn_parts(self) -> None:
+        base = {
+            "observation": "Grounded observation.",
+            "question": "What belongs in your world?",
+            "response_mode": "reconnect_world",
+            "participation": {name: [] for name in (
+                "people", "communities", "responsibilities", "new_contexts", "next_participation"
+            )},
+            "what_matters": None,
+            "next_participation_evidence": None,
+            "ready_to_conclude": False,
+            "conclusion_reason": None,
+        }
+
+        RelationalResponse.from_dict(
+            {**base, "observation": "word " * OBSERVATION_MAX_WORDS}
+        )
+        RelationalResponse.from_dict(
+            {**base, "question": "word " * QUESTION_MAX_WORDS}
+        )
+        with self.assertRaises(StructuredResponseError):
+            RelationalResponse.from_dict(
+                {**base, "observation": "word " * (OBSERVATION_MAX_WORDS + 1)}
+            )
+        with self.assertRaises(StructuredResponseError):
+            RelationalResponse.from_dict(
+                {**base, "question": "word " * (QUESTION_MAX_WORDS + 1)}
+            )
+
+    def test_ready_turn_has_no_question_and_non_ready_turn_requires_one(self) -> None:
+        participation = {
+            "people": ["My partner"],
+            "communities": [],
+            "responsibilities": [],
+            "new_contexts": [],
+            "next_participation": ["Speak with my partner"],
+        }
+        ready = {
+            "observation": "The next participation is yours.",
+            "question": None,
+            "response_mode": "support_reflection",
+            "participation": participation,
+            "what_matters": "Care",
+            "next_participation_evidence": "I will speak with my partner",
+            "ready_to_conclude": True,
+            "conclusion_reason": "The user named it.",
+        }
+
+        RelationalResponse.from_dict(ready)
+        with self.assertRaises(StructuredResponseError):
+            RelationalResponse.from_dict({**ready, "question": "Continue?"})
+        with self.assertRaises(StructuredResponseError):
+            RelationalResponse.from_dict(
+                {**ready, "ready_to_conclude": False, "conclusion_reason": None}
+            )
 
     def test_merge_preserves_order_deduplicates_and_does_not_erase(self) -> None:
         earlier = ParticipationState(people=["My partner"], responsibilities=["Care"])

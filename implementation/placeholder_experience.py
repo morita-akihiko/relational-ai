@@ -28,31 +28,26 @@ def relational_opening(situation: str) -> str:
 
     if situation == DEMO_SCENARIO:
         return (
-            "I should not make that decision for you. I can help you notice what the choice "
-            "connects you to: what matters, who is affected, and which consequences you are "
-            "willing to own. What would accepting—or declining—ask you to become responsible for?"
+            "This choice reaches beyond the offer. "
+            "What would accepting—or declining—ask you to become responsible for?"
         )
     return (
-        "Before we look for an answer, let’s notice what this situation connects you to. "
-        "What matters here, and who or what beyond this conversation is part of it?"
+        "This situation already points beyond the chat. "
+        "What matters most, and who or what else belongs in it?"
     )
 
 
 def conventional_demo_response() -> str:
     return (
-        "I can help you decide. Start by comparing compensation, growth, stability, culture, "
-        "and work-life balance. Score each factor from 1–5; if the new role wins clearly, "
-        "accepting it is probably the stronger choice."
+        "Compare compensation, growth, stability, culture, and work-life balance. "
+        "Score each factor, then choose the role with the stronger total."
     )
 
 
 def placeholder_relational_response(response_index: int) -> str:
     responses = (
-        "That brings your own priorities into view. Who else is meaningfully part of this "
-        "situation—not to decide for you, but because your choice participates in a shared world?",
-        "You have named both a responsibility and people who belong in the next step. Rather "
-        "than resolving everything here, what conversation, observation, or action would let "
-        "you participate with them directly?",
+        "Your priorities are becoming visible. Who else meaningfully shares this situation?",
+        "People and responsibilities are now in view. What participation would belong in your world next?",
     )
     return responses[min(response_index, len(responses) - 1)]
 
@@ -90,18 +85,25 @@ def placeholder_relational_turn(
     )
     ready = is_demo and response_index > 0 and bool(grounded_next)
 
-    if response_index == 0:
-        message = relational_opening(situation)
+    if response_index == 0 and is_demo:
+        observation = "This choice reaches beyond the offer."
+        question = "What would accepting—or declining—ask you to become responsible for?"
+    elif response_index == 0:
+        observation = "This situation already points beyond the chat."
+        question = "What matters most, and who or what else belongs in it?"
     elif ready:
-        message = (
-            "You have named a next participation in your own words. There is enough here "
-            "to hand the initiative back to you and the people involved."
-        )
+        observation = "You have named a participation that belongs in your world."
+        question = None
+    elif response_index == 1:
+        observation = "Your priorities are becoming visible."
+        question = "Who else meaningfully shares this situation?"
     else:
-        message = placeholder_relational_response(response_index - 1)
+        observation = "People and responsibilities are now in view."
+        question = "What participation would belong in your world next?"
 
     return RelationalResponse(
-        message=message,
+        observation=observation,
+        question=question,
         response_mode=response_mode,
         participation=participation,
         what_matters=(

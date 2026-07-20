@@ -7,6 +7,7 @@ content remains available as a transparent fallback.
 from __future__ import annotations
 
 from html import escape
+import os
 
 import streamlit as st
 
@@ -38,6 +39,7 @@ def init_state() -> None:
         "messages": [],
         "response_count": 0,
         "participation": ParticipationState(),
+        "latest_additions": ParticipationState(),
         "what_matters": None,
         "next_participation_evidence": None,
         "ready_to_conclude": False,
@@ -63,6 +65,7 @@ def reset_experience() -> None:
         "messages",
         "response_count",
         "participation",
+        "latest_additions",
         "what_matters",
         "next_participation_evidence",
         "ready_to_conclude",
@@ -113,6 +116,20 @@ def apply_styles() -> None:
         }
         .map-node h4 { color: #42604b; margin: 0 0 .5rem; font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; }
         .map-node p { margin: 0; line-height: 1.45; }
+        .map-item { display: block; margin: .3rem 0; }
+        .map-item.new { color: #244b31; font-weight: 700; }
+        .new-tag {
+            display: inline-block; margin-left: .35rem; padding: .05rem .35rem;
+            border-radius: 999px; background: #dbe9d8; color: #365b3e;
+            font-size: .62rem; letter-spacing: .05em; text-transform: uppercase;
+        }
+        .assistant-turn {
+            padding: 1rem 1.1rem; border-left: 3px solid #708c72;
+            background: rgba(255,255,255,.58); border-radius: 0 12px 12px 0;
+            margin: .55rem 0 1rem;
+        }
+        .assistant-turn p { margin: 0 0 .45rem; color: #4b5950; }
+        .assistant-turn strong { font-family: Georgia, serif; font-size: 1.05rem; }
         .release {
             text-align: center; padding: 3.2rem 1.4rem; border-radius: 24px;
             background: #e7eee4; border: 1px solid #c8d5c5;
@@ -144,7 +161,14 @@ def render_sidebar() -> None:
             else "Placeholder fallback"
         )
         st.caption(f"Response source: {source}")
-        if st.session_state.screen != "landing" and st.button("Start over", use_container_width=True):
+        if os.getenv("RELATIONAL_AI_DEV") == "1" and st.session_state.screen != "landing":
+            st.divider()
+            st.caption("Development only")
+        if (
+            os.getenv("RELATIONAL_AI_DEV") == "1"
+            and st.session_state.screen != "landing"
+            and st.button("Reset session", use_container_width=True)
+        ):
             reset_experience()
             st.rerun()
 
@@ -197,8 +221,16 @@ def begin_experience(mode: str, situation: str) -> None:
         response_cycle=0,
         user_reply_count=0,
     )
-    st.session_state.messages = [{"role": "assistant", "content": opening.message}]
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": opening.message,
+            "observation": opening.observation,
+            "question": opening.question,
+        }
+    ]
     st.session_state.participation = opening.participation
+    st.session_state.latest_additions = opening.participation
     st.session_state.what_matters = opening.what_matters
     st.session_state.next_participation_evidence = opening.next_participation_evidence
     st.session_state.ready_to_conclude = opening.ready_to_conclude
@@ -217,9 +249,8 @@ def render_landing() -> None:
     st.markdown(
         """
         <div class="hero-sub">
-        It is to help you participate more fully in the world beyond this conversation.
-        Bring a situation you are considering. We will explore it briefly, notice what it
-        connects you to, and stop when the next part belongs in your world.
+        Bring a situation. Notice what it connects you to. Leave with participation
+        that belongs in your world.
         </div>
         """,
         unsafe_allow_html=True,
@@ -283,44 +314,116 @@ def render_demo_comparison() -> None:
             """,
             unsafe_allow_html=True,
         )
-    st.caption("The comparison ends here. The experience continues only along the relational path.")
-    st.divider()
+    st.caption("One answers inside the chat. One opens participation beyond it.")
+
+
+def participation_additions(
+    previous: ParticipationState, current: ParticipationState
+) -> ParticipationState:
+    additions: dict[str, list[str]] = {}
+    for name, values in current.as_dict().items():
+        prior = {" ".join(item.casefold().split()) for item in getattr(previous, name)}
+        additions[name] = [
+            item for item in values if " ".join(item.casefold().split()) not in prior
+        ]
+    return ParticipationState(**additions)
+
+
+def render_assistant_turn(message: dict[str, str | None]) -> None:
+    observation = escape(str(message.get("observation") or message.get("content") or ""))
+    question = message.get("question")
+    question_html = f"<strong>{escape(str(question))}</strong>" if question else ""
+    st.markdown(
+        f'<div class="assistant-turn"><p>{observation}</p>{question_html}</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def render_conversation() -> None:
     if st.session_state.mode == "demo":
-        render_demo_comparison()
+        if st.session_state.response_count == 0:
+            render_demo_comparison()
+        else:
+            with st.expander("Opening comparison"):
+                render_demo_comparison()
     else:
         st.markdown('<div class="eyebrow">A brief relational conversation</div>', unsafe_allow_html=True)
-        st.title("Let’s notice what this opens toward.")
         st.markdown(f"> {st.session_state.situation}")
 
-    st.markdown(
-        '<div class="quiet-note">This conversation will pause when a meaningful next participation has emerged.</div>',
-        unsafe_allow_html=True,
-    )
-    if st.session_state.generation_notice:
-        st.warning(st.session_state.generation_notice)
+    map_column, exchange_column = st.columns([1.7, 1], gap="large")
+    with map_column:
+        st.markdown('<div class="eyebrow">Participation taking shape</div>', unsafe_allow_html=True)
+        render_participation_map(
+            st.session_state.participation, st.session_state.latest_additions
+        )
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
+    with exchange_column:
+        st.markdown('<div class="eyebrow">The exchange</div>', unsafe_allow_html=True)
+        if st.session_state.generation_notice:
+            st.warning(st.session_state.generation_notice)
+
+        for message in st.session_state.messages:
+            if message["role"] == "assistant":
+                render_assistant_turn(message)
+            else:
+                with st.chat_message("user"):
+                    st.write(message["content"])
+
+        if st.session_state.ready_to_conclude:
+            st.success("A grounded participation is ready for your review.")
+
+        ready = st.session_state.ready_to_conclude
+        if st.button(
+            "Review my participation",
+            type="primary",
+            disabled=not ready,
+            help="Continue until a next participation is grounded in your own words."
+            if not ready
+            else None,
+            use_container_width=True,
+        ):
+            participation = st.session_state.participation
+            connected = [
+                *participation.people,
+                *participation.communities,
+                *participation.responsibilities,
+                *participation.new_contexts,
+            ]
+            st.session_state.card = {
+                "what_matters": st.session_state.what_matters or "",
+                "connected_to": ", ".join(connected),
+                "next_participation": ", ".join(participation.next_participation),
+                "when_or_where": "",
+            }
+            st.session_state.screen = "participation"
+            st.rerun()
 
     if not st.session_state.ready_to_conclude:
         response = st.chat_input("Respond in your own words")
         if response:
             st.session_state.messages.append({"role": "user", "content": response})
-            with st.spinner("Noticing what this connects to…"):
+            previous = st.session_state.participation
+            with st.spinner("Updating the field…"):
                 turn = run_relational_turn(
                     situation=st.session_state.situation,
                     messages=conversation_input(st.session_state.messages),
-                    participation=st.session_state.participation,
+                    participation=previous,
                     what_matters=st.session_state.what_matters,
                     next_participation_evidence=st.session_state.next_participation_evidence,
                     response_cycle=st.session_state.response_count + 1,
                     user_reply_count=st.session_state.response_count + 1,
                 )
-            st.session_state.messages.append({"role": "assistant", "content": turn.message})
+            st.session_state.messages.append(
+                {
+                    "role": "assistant",
+                    "content": turn.message,
+                    "observation": turn.observation,
+                    "question": turn.question,
+                }
+            )
+            st.session_state.latest_additions = participation_additions(
+                previous, turn.participation
+            )
             st.session_state.participation = turn.participation
             st.session_state.what_matters = turn.what_matters
             st.session_state.next_participation_evidence = turn.next_participation_evidence
@@ -329,66 +432,65 @@ def render_conversation() -> None:
             st.session_state.generation_notice = turn.generation_notice
             st.session_state.response_count += 1
             st.rerun()
-    else:
-        st.success("There is enough here to see how participation might extend beyond this chat.")
-
-    ready = st.session_state.ready_to_conclude
-    if st.button(
-        "See the participation taking shape",
-        type="primary",
-        disabled=not ready,
-        help="Continue until a next participation is grounded in your own words." if not ready else None,
-    ):
-        participation = st.session_state.participation
-        connected = [
-            *participation.people,
-            *participation.communities,
-            *participation.responsibilities,
-            *participation.new_contexts,
-        ]
-        st.session_state.card = {
-            "what_matters": st.session_state.what_matters or "",
-            "connected_to": ", ".join(connected),
-            "next_participation": ", ".join(participation.next_participation),
-            "when_or_where": "",
-        }
-        st.session_state.screen = "participation"
-        st.rerun()
 
 
-def render_map_node(title: str, values: list[str]) -> None:
-    content = "<br>".join(values) if values else "Still open"
+def render_map_node(
+    title: str, values: list[str], new_values: list[str] | None = None
+) -> None:
+    new_keys = {" ".join(value.casefold().split()) for value in (new_values or [])}
+    items = []
+    for value in values:
+        is_new = " ".join(value.casefold().split()) in new_keys
+        marker = '<span class="new-tag">New</span>' if is_new else ""
+        css_class = "map-item new" if is_new else "map-item"
+        items.append(f'<span class="{css_class}">{escape(value)}{marker}</span>')
+    content = "".join(items) if items else '<span class="map-item">Still open</span>'
     st.markdown(
         f'<div class="map-node"><h4>{title}</h4><p>{content}</p></div>',
         unsafe_allow_html=True,
     )
 
 
+def render_participation_map(
+    participation: ParticipationState, additions: ParticipationState | None = None
+) -> None:
+    additions = additions or ParticipationState()
+    st.markdown(
+        '<div class="map-origin">AI conversation<br>temporary orientation</div>',
+        unsafe_allow_html=True,
+    )
+    first_row = st.columns(3)
+    with first_row[0]:
+        render_map_node("People", participation.people, additions.people)
+    with first_row[1]:
+        render_map_node("Communities", participation.communities, additions.communities)
+    with first_row[2]:
+        render_map_node(
+            "Responsibilities", participation.responsibilities, additions.responsibilities
+        )
+    second_row = st.columns(2)
+    with second_row[0]:
+        render_map_node("New contexts", participation.new_contexts, additions.new_contexts)
+    with second_row[1]:
+        render_map_node(
+            "Next participation",
+            participation.next_participation,
+            additions.next_participation,
+        )
+
+
 def render_participation() -> None:
     st.markdown('<div class="eyebrow">Participation beyond the conversation</div>', unsafe_allow_html=True)
     st.title("Your wider relational field is coming into view.")
-    st.write(
-        "The conversation is not the destination. These are the people, contexts, and forms of participation it has helped bring forward."
-    )
-    st.markdown('<div class="map-origin">AI conversation<br>temporary point of orientation</div>', unsafe_allow_html=True)
-
-    participation = st.session_state.participation.as_dict()
-    first_row = st.columns(3)
-    with first_row[0]:
-        render_map_node("People involved", participation["people"])
-    with first_row[1]:
-        render_map_node("Communities", participation["communities"])
-    with first_row[2]:
-        render_map_node("Responsibilities", participation["responsibilities"])
-    second_row = st.columns([1, 1, 0.5])
-    with second_row[0]:
-        render_map_node("New contexts", participation["new_contexts"])
-    with second_row[1]:
-        render_map_node("Next participation", participation["next_participation"])
+    render_participation_map(st.session_state.participation)
 
     st.divider()
     st.subheader("Participation Card")
     st.caption("This is an editable handoff, not a prescription. Make the language yours.")
+    if st.session_state.next_participation_evidence:
+        st.caption(
+            f'Grounded in your words: “{st.session_state.next_participation_evidence}”'
+        )
     card = st.session_state.card
     with st.form("participation_card"):
         what_matters = st.text_area("What matters", value=card["what_matters"])
@@ -408,39 +510,37 @@ def render_participation() -> None:
 
 
 def render_conclusion() -> None:
+    card = st.session_state.card
     st.markdown(
-        """
+        f"""
         <div class="release">
-          <div class="eyebrow">A good stopping point</div>
-          <h1>I think we've reached a good stopping point.</h1>
-          <p>The next part belongs in your world.</p>
+          <div class="eyebrow">The conversation ends here</div>
+          <h1>The next part belongs in your world.</h1>
+          <p><strong>{escape(card['next_participation'])}</strong></p>
+          <p>This is concrete enough to carry forward—and yours to revise there.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
     st.write("")
     st.subheader("Your Participation Card")
-    card = st.session_state.card
     st.markdown(
         f"""
         <dl>
           <dt><strong>What matters</strong></dt>
-          <dd>{card['what_matters']}</dd>
+          <dd>{escape(card['what_matters'])}</dd>
           <dt><strong>Who or what this connects to</strong></dt>
-          <dd>{card['connected_to']}</dd>
+          <dd>{escape(card['connected_to'])}</dd>
           <dt><strong>My next participation</strong></dt>
-          <dd>{card['next_participation']}</dd>
+          <dd>{escape(card['next_participation'])}</dd>
           <dt><strong>When or where</strong></dt>
-          <dd>{card['when_or_where'] or 'Left open'}</dd>
+          <dd>{escape(card['when_or_where']) if card['when_or_where'] else 'Left open'}</dd>
         </dl>
         """
         ,
         unsafe_allow_html=True,
     )
-    st.info("The conversation is now complete. No further response is needed here.")
-    if st.button("Start a new conversation"):
-        reset_experience()
-        st.rerun()
+    st.info("No further response is needed here.")
 
 
 def main() -> None:

@@ -14,7 +14,8 @@ from .prompts import RELATIONAL_INSTRUCTIONS
 
 @dataclass(frozen=True)
 class ConversationTurn:
-    message: str
+    observation: str
+    question: str | None
     participation: ParticipationState
     what_matters: str | None
     next_participation_evidence: str | None
@@ -22,6 +23,10 @@ class ConversationTurn:
     response_mode: ResponseMode
     generation_source: str
     generation_notice: str
+
+    @property
+    def message(self) -> str:
+        return " ".join(part for part in (self.observation, self.question) if part)
 
 
 def choose_response_mode(
@@ -133,7 +138,8 @@ def run_relational_turn(
     )
 
     return ConversationTurn(
-        message=response.message,
+        observation=response.observation,
+        question=response.question,
         participation=merged,
         what_matters=current_what_matters,
         next_participation_evidence=current_evidence,

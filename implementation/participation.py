@@ -16,6 +16,10 @@ PARTICIPATION_FIELDS = (
     "next_participation",
 )
 EXTERNAL_CONNECTION_FIELDS = PARTICIPATION_FIELDS[:-1]
+OBSERVATION_TARGET_WORDS = 18
+OBSERVATION_MAX_WORDS = 28
+QUESTION_TARGET_WORDS = 16
+QUESTION_MAX_WORDS = 24
 
 
 class StructuredResponseError(ValueError):
@@ -66,7 +70,8 @@ class ParticipationState:
 
 @dataclass(frozen=True)
 class RelationalResponse:
-    message: str
+    observation: str
+    question: str | None
     response_mode: ResponseMode
     participation: ParticipationState
     what_matters: str | None
@@ -77,7 +82,8 @@ class RelationalResponse:
     @classmethod
     def from_dict(cls, data: Any) -> "RelationalResponse":
         expected = {
-            "message",
+            "observation",
+            "question",
             "response_mode",
             "participation",
             "what_matters",
@@ -88,16 +94,26 @@ class RelationalResponse:
         if not isinstance(data, dict) or set(data) != expected:
             raise StructuredResponseError("relational response has missing or unknown fields.")
 
-        message = data["message"]
-        if not isinstance(message, str) or not message.strip():
-            raise StructuredResponseError("message must be a nonempty string.")
+        observation = data["observation"]
+        if not isinstance(observation, str) or not observation.strip():
+            raise StructuredResponseError("observation must be a nonempty string.")
+        observation = observation.strip()
+        if len(observation.split()) > OBSERVATION_MAX_WORDS:
+            raise StructuredResponseError(
+                f"observation must not exceed {OBSERVATION_MAX_WORDS} words."
+            )
         try:
             response_mode = ResponseMode(data["response_mode"])
         except (TypeError, ValueError) as exc:
             raise StructuredResponseError("response_mode is unknown.") from exc
 
         optional_strings: dict[str, str | None] = {}
-        for name in ("what_matters", "next_participation_evidence", "conclusion_reason"):
+        for name in (
+            "question",
+            "what_matters",
+            "next_participation_evidence",
+            "conclusion_reason",
+        ):
             value = data[name]
             if value is not None and not isinstance(value, str):
                 raise StructuredResponseError(f"{name} must be a string or null.")
@@ -108,9 +124,19 @@ class RelationalResponse:
             raise StructuredResponseError("ready_to_conclude must be a boolean.")
         if ready and not optional_strings["conclusion_reason"]:
             raise StructuredResponseError("ready responses require a conclusion_reason.")
+        question = optional_strings["question"]
+        if question and len(question.split()) > QUESTION_MAX_WORDS:
+            raise StructuredResponseError(
+                f"question must not exceed {QUESTION_MAX_WORDS} words."
+            )
+        if ready and question:
+            raise StructuredResponseError("ready responses must not ask another question.")
+        if not ready and not question:
+            raise StructuredResponseError("non-ready responses require one focused question.")
 
         return cls(
-            message=message.strip(),
+            observation=observation,
+            question=question,
             response_mode=response_mode,
             participation=ParticipationState.from_dict(data["participation"]),
             what_matters=optional_strings["what_matters"],
@@ -118,6 +144,12 @@ class RelationalResponse:
             ready_to_conclude=ready,
             conclusion_reason=optional_strings["conclusion_reason"],
         )
+
+    @property
+    def message(self) -> str:
+        """Return the compact display text for this turn."""
+
+        return " ".join(part for part in (self.observation, self.question) if part)
 
 
 def evidence_is_grounded(evidence: str | None, user_messages: list[str]) -> bool:
@@ -160,7 +192,8 @@ RELATIONAL_RESPONSE_JSON_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "required": [
-        "message",
+        "observation",
+        "question",
         "response_mode",
         "participation",
         "what_matters",
@@ -169,7 +202,8 @@ RELATIONAL_RESPONSE_JSON_SCHEMA: dict[str, Any] = {
         "conclusion_reason",
     ],
     "properties": {
-        "message": {"type": "string"},
+        "observation": {"type": "string"},
+        "question": {"type": ["string", "null"]},
         "response_mode": {"type": "string", "enum": [mode.value for mode in ResponseMode]},
         "participation": {
             "type": "object",

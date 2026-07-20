@@ -41,13 +41,17 @@ class OpenAIClientTests(unittest.TestCase):
     def test_prompt_policies_make_the_philosophical_difference_explicit(self) -> None:
         self.assertIn("world beyond this conversation", RELATIONAL_INSTRUCTIONS)
         self.assertIn("finite conversation", RELATIONAL_INSTRUCTIONS)
+        self.assertIn("about 18 words", RELATIONAL_INSTRUCTIONS)
+        self.assertIn("Never exceed 28 observation words", RELATIONAL_INSTRUCTIONS)
         self.assertIn("direct answer", CONVENTIONAL_DEMO_INSTRUCTIONS)
+        self.assertIn("35 words", CONVENTIONAL_DEMO_INSTRUCTIONS)
         self.assertNotIn("Article 12", CONVENTIONAL_DEMO_INSTRUCTIONS)
 
     @patch("implementation.openai_client.OpenAI")
     def test_structured_response_is_validated(self, openai_class: Mock) -> None:
         payload = {
-            "message": "A grounded response.",
+            "observation": "A grounded observation.",
+            "question": "Who else belongs in this situation?",
             "response_mode": "reconnect_world",
             "participation": {
                 "people": ["My partner"],
@@ -73,7 +77,10 @@ class OpenAIClientTests(unittest.TestCase):
             timeout=3,
         )
 
-        self.assertEqual(result.message, "A grounded response.")
+        self.assertEqual(
+            result.message,
+            "A grounded observation. Who else belongs in this situation?",
+        )
         openai_class.assert_called_once_with(api_key="test-key", timeout=3)
         call = openai_class.return_value.responses.create.call_args.kwargs
         self.assertEqual(call["text"]["format"]["type"], "json_schema")
