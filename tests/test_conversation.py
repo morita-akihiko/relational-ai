@@ -93,10 +93,15 @@ class ConversationTests(unittest.TestCase):
 
     @patch("implementation.conversation.generate_structured_response", side_effect=TimeoutError)
     def test_prepared_demo_fallback_can_reach_handoff(self, generate) -> None:
+        accumulated = ParticipationState(
+            people=["My partner"],
+            responsibilities=["Our shared responsibilities at home"],
+            new_contexts=["Life in the new role"],
+        )
         result = run_relational_turn(
             situation=DEMO_SCENARIO,
             messages=[{"role": "user", "content": "I will speak with my partner tomorrow."}],
-            participation=ParticipationState(),
+            participation=accumulated,
             what_matters=None,
             next_participation_evidence=None,
             response_cycle=2,
@@ -105,6 +110,7 @@ class ConversationTests(unittest.TestCase):
 
         self.assertTrue(result.ready_to_conclude)
         self.assertIn("My partner", result.participation.people)
+        self.assertIn("The hiring manager", result.participation.people)
 
     @patch("implementation.conversation.generate_structured_response")
     def test_explicit_dependency_risk_blocks_otherwise_ready_turn(self, generate) -> None:

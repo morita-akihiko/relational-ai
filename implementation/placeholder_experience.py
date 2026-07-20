@@ -6,7 +6,18 @@ from .agency_controller import ResponseMode
 from .participation import ParticipationState, RelationalResponse
 
 
-DEMO_SCENARIO = "I have been offered a new role. Please tell me whether I should accept it."
+DEMO_SCENARIO = (
+    "I've been offered a new role and need to decide by Friday. It could mean growth, "
+    "but I'm worried about what it changes at home."
+)
+DEMO_REPLY_1 = (
+    "Growth matters, but my partner and our shared responsibilities at home are part "
+    "of this decision."
+)
+DEMO_REPLY_2 = (
+    "I will talk with my partner tonight, then ask the hiring manager how the team "
+    "handles workload."
+)
 
 EXAMPLE_SITUATIONS: tuple[str, ...] = (
     DEMO_SCENARIO,
@@ -28,8 +39,8 @@ def relational_opening(situation: str) -> str:
 
     if situation == DEMO_SCENARIO:
         return (
-            "This choice reaches beyond the offer. "
-            "What would accepting—or declining—ask you to become responsible for?"
+            "This opportunity affects more than your career. "
+            "What would the decision change in the life you already share with others?"
         )
     return (
         "This situation already points beyond the chat. "
@@ -39,7 +50,7 @@ def relational_opening(situation: str) -> str:
 
 def conventional_demo_response() -> str:
     return (
-        "Compare compensation, growth, stability, culture, and work-life balance. "
+        "Compare compensation, growth, stability, and work-life balance. "
         "Score each factor, then choose the role with the stronger total."
     )
 
@@ -76,24 +87,33 @@ def placeholder_relational_turn(
 
     is_demo = situation == DEMO_SCENARIO
     grounded_next = latest_user_message.strip() if _user_names_participation(latest_user_message) else ""
-    participation = ParticipationState(
-        people=["My partner", "The hiring manager"] if is_demo else [],
-        communities=["The future team", "My family"] if is_demo else [],
-        responsibilities=["Care for existing commitments"] if is_demo else [],
-        new_contexts=["The team's actual expectations"] if is_demo else [],
-        next_participation=[grounded_next] if grounded_next else [],
-    )
-    ready = is_demo and response_index > 0 and bool(grounded_next)
+    participation = ParticipationState()
+    if is_demo and response_index == 0:
+        participation.new_contexts = ["A potential new role"]
+    elif is_demo and response_index == 1:
+        participation.people = ["My partner"]
+        participation.responsibilities = ["Our shared responsibilities at home"]
+        participation.new_contexts = ["Life in the new role"]
+    elif is_demo and response_index >= 2:
+        participation.people = ["The hiring manager"]
+        participation.new_contexts = ["The team's workload expectations"]
+        participation.next_participation = [grounded_next] if grounded_next else []
+    elif grounded_next:
+        participation.next_participation = [grounded_next]
+    ready = is_demo and response_index >= 2 and bool(grounded_next)
 
     if response_index == 0 and is_demo:
-        observation = "This choice reaches beyond the offer."
-        question = "What would accepting—or declining—ask you to become responsible for?"
+        observation = "This opportunity affects more than your career."
+        question = "What would the decision change in the life you already share with others?"
     elif response_index == 0:
         observation = "This situation already points beyond the chat."
         question = "What matters most, and who or what else belongs in it?"
     elif ready:
-        observation = "You have named a participation that belongs in your world."
+        observation = "You have named the conversations that can carry this decision back into your world."
         question = None
+    elif is_demo and response_index == 1:
+        observation = "This is a career decision inside a shared life."
+        question = "What would help you meet the decision in that shared world?"
     elif response_index == 1:
         observation = "Your priorities are becoming visible."
         question = "Who else meaningfully shares this situation?"

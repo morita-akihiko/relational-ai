@@ -15,6 +15,8 @@ from implementation.conversation import run_relational_turn
 from implementation.openai_client import OpenAIConfigurationError, generate_response
 from implementation.participation import ParticipationState
 from implementation.placeholder_experience import (
+    DEMO_REPLY_1,
+    DEMO_REPLY_2,
     DEMO_SCENARIO,
     EXAMPLE_SITUATIONS,
     conventional_demo_response,
@@ -95,6 +97,15 @@ def apply_styles() -> None:
             margin: 0 0 1.2rem;
         }
         .hero-sub { font-size: 1.18rem; line-height: 1.65; max-width: 690px; color: #4b5950; }
+        .story-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem;
+            margin: 1.6rem 0 2rem;
+        }
+        .story-card {
+            padding: 1rem; border-top: 2px solid #91a68f; background: rgba(255,255,255,.45);
+        }
+        .story-card strong { display: block; margin-bottom: .25rem; color: #304d38; }
+        .story-card span { color: #5a665e; line-height: 1.4; }
         .quiet-note {
             border-left: 3px solid #91a68f; padding: .65rem 1rem;
             color: #536057; background: rgba(255,255,255,.45); margin: 1rem 0 1.5rem;
@@ -116,6 +127,7 @@ def apply_styles() -> None:
         }
         .map-node h4 { color: #42604b; margin: 0 0 .5rem; font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; }
         .map-node p { margin: 0; line-height: 1.45; }
+        .map-node.next-ready { border-color: #708c72; background: #eef3eb; }
         .map-item { display: block; margin: .3rem 0; }
         .map-item.new { color: #244b31; font-weight: 700; }
         .new-tag {
@@ -130,6 +142,11 @@ def apply_styles() -> None:
         }
         .assistant-turn p { margin: 0 0 .45rem; color: #4b5950; }
         .assistant-turn strong { font-family: Georgia, serif; font-size: 1.05rem; }
+        .turn-label {
+            display: block; margin-bottom: .2rem; color: #718078; font-size: .66rem;
+            font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+        }
+        .question-block { margin-top: .8rem; }
         .release {
             text-align: center; padding: 3.2rem 1.4rem; border-radius: 24px;
             background: #e7eee4; border: 1px solid #c8d5c5;
@@ -137,6 +154,15 @@ def apply_styles() -> None:
         .release h1 { font-family: Georgia, serif; font-size: 2.5rem; line-height: 1.15; }
         .release p { font-size: 1.2rem; color: #4c5d50; }
         div.stButton > button { border-radius: 999px; min-height: 2.8rem; }
+        @media (max-width: 780px) {
+            .block-container { padding-top: 1.25rem; padding-left: 1rem; padding-right: 1rem; }
+            .hero { font-size: 2.55rem; }
+            .hero-sub { font-size: 1.02rem; }
+            .story-grid { grid-template-columns: 1fr; gap: .45rem; }
+            .map-origin { margin-bottom: .75rem; padding: .7rem; }
+            .map-node { min-height: auto; padding: .8rem; }
+            .mode-card { min-height: auto; }
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -229,8 +255,11 @@ def begin_experience(mode: str, situation: str) -> None:
             "question": opening.question,
         }
     ]
-    st.session_state.participation = opening.participation
-    st.session_state.latest_additions = opening.participation
+    opening_participation = opening.participation
+    if mode == "demo":
+        opening_participation = ParticipationState(new_contexts=["A potential new role"])
+    st.session_state.participation = opening_participation
+    st.session_state.latest_additions = opening_participation
     st.session_state.what_matters = opening.what_matters
     st.session_state.next_participation_evidence = opening.next_participation_evidence
     st.session_state.ready_to_conclude = opening.ready_to_conclude
@@ -249,8 +278,13 @@ def render_landing() -> None:
     st.markdown(
         """
         <div class="hero-sub">
-        Bring a situation. Notice what it connects you to. Leave with participation
-        that belongs in your world.
+        Bring one unresolved concern. Watch its wider field take shape. Leave when a
+        next participation is genuinely yours.
+        </div>
+        <div class="story-grid">
+          <div class="story-card"><strong>World first</strong><span>Every concern belongs to a wider world.</span></div>
+          <div class="story-card"><strong>The AI leaves room</strong><span>Your judgment does the rest.</span></div>
+          <div class="story-card"><strong>An intentional ending</strong><span>Success continues beyond the chat.</span></div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -332,11 +366,48 @@ def participation_additions(
 def render_assistant_turn(message: dict[str, str | None]) -> None:
     observation = escape(str(message.get("observation") or message.get("content") or ""))
     question = message.get("question")
-    question_html = f"<strong>{escape(str(question))}</strong>" if question else ""
+    question_html = (
+        '<div class="question-block"><span class="turn-label">Question</span>'
+        f"<strong>{escape(str(question))}</strong></div>"
+        if question
+        else ""
+    )
     st.markdown(
-        f'<div class="assistant-turn"><p>{observation}</p>{question_html}</div>',
+        '<div class="assistant-turn"><span class="turn-label">Observation</span>'
+        f"<p>{observation}</p>{question_html}</div>",
         unsafe_allow_html=True,
     )
+
+
+def process_user_response(response: str) -> None:
+    st.session_state.messages.append({"role": "user", "content": response})
+    previous = st.session_state.participation
+    with st.spinner("Updating the field…"):
+        turn = run_relational_turn(
+            situation=st.session_state.situation,
+            messages=conversation_input(st.session_state.messages),
+            participation=previous,
+            what_matters=st.session_state.what_matters,
+            next_participation_evidence=st.session_state.next_participation_evidence,
+            response_cycle=st.session_state.response_count + 1,
+            user_reply_count=st.session_state.response_count + 1,
+        )
+    st.session_state.messages.append(
+        {
+            "role": "assistant",
+            "content": turn.message,
+            "observation": turn.observation,
+            "question": turn.question,
+        }
+    )
+    st.session_state.latest_additions = participation_additions(previous, turn.participation)
+    st.session_state.participation = turn.participation
+    st.session_state.what_matters = turn.what_matters
+    st.session_state.next_participation_evidence = turn.next_participation_evidence
+    st.session_state.ready_to_conclude = turn.ready_to_conclude
+    st.session_state.generation_source = turn.generation_source
+    st.session_state.generation_notice = turn.generation_notice
+    st.session_state.response_count += 1
 
 
 def render_conversation() -> None:
@@ -398,55 +469,55 @@ def render_conversation() -> None:
             st.session_state.screen = "participation"
             st.rerun()
 
+        if not ready:
+            st.caption("Available when a next participation appears in your words.")
+
+        if (
+            st.session_state.mode == "demo"
+            and not ready
+            and st.session_state.response_count < 2
+        ):
+            st.divider()
+            st.caption("Prepared Build Week journey")
+            prepared_reply = (
+                DEMO_REPLY_1 if st.session_state.response_count == 0 else DEMO_REPLY_2
+            )
+            if st.button(
+                "Continue the demonstration",
+                key=f"demo_continue_{st.session_state.response_count}",
+                use_container_width=True,
+            ):
+                process_user_response(prepared_reply)
+                st.rerun()
+
     if not st.session_state.ready_to_conclude:
         response = st.chat_input("Respond in your own words")
         if response:
-            st.session_state.messages.append({"role": "user", "content": response})
-            previous = st.session_state.participation
-            with st.spinner("Updating the field…"):
-                turn = run_relational_turn(
-                    situation=st.session_state.situation,
-                    messages=conversation_input(st.session_state.messages),
-                    participation=previous,
-                    what_matters=st.session_state.what_matters,
-                    next_participation_evidence=st.session_state.next_participation_evidence,
-                    response_cycle=st.session_state.response_count + 1,
-                    user_reply_count=st.session_state.response_count + 1,
-                )
-            st.session_state.messages.append(
-                {
-                    "role": "assistant",
-                    "content": turn.message,
-                    "observation": turn.observation,
-                    "question": turn.question,
-                }
-            )
-            st.session_state.latest_additions = participation_additions(
-                previous, turn.participation
-            )
-            st.session_state.participation = turn.participation
-            st.session_state.what_matters = turn.what_matters
-            st.session_state.next_participation_evidence = turn.next_participation_evidence
-            st.session_state.ready_to_conclude = turn.ready_to_conclude
-            st.session_state.generation_source = turn.generation_source
-            st.session_state.generation_notice = turn.generation_notice
-            st.session_state.response_count += 1
+            process_user_response(response)
             st.rerun()
 
 
 def render_map_node(
-    title: str, values: list[str], new_values: list[str] | None = None
+    title: str,
+    values: list[str],
+    empty_state: str,
+    new_values: list[str] | None = None,
 ) -> None:
     new_keys = {" ".join(value.casefold().split()) for value in (new_values or [])}
     items = []
     for value in values:
         is_new = " ".join(value.casefold().split()) in new_keys
-        marker = '<span class="new-tag">New</span>' if is_new else ""
+        marker = '<span class="new-tag">This turn</span>' if is_new else ""
         css_class = "map-item new" if is_new else "map-item"
         items.append(f'<span class="{css_class}">{escape(value)}{marker}</span>')
-    content = "".join(items) if items else '<span class="map-item">Still open</span>'
+    content = (
+        "".join(items)
+        if items
+        else f'<span class="map-item">{escape(empty_state)}</span>'
+    )
+    node_class = "map-node next-ready" if title == "Next participation" and values else "map-node"
     st.markdown(
-        f'<div class="map-node"><h4>{title}</h4><p>{content}</p></div>',
+        f'<div class="{node_class}"><h4>{title}</h4><p>{content}</p></div>',
         unsafe_allow_html=True,
     )
 
@@ -456,25 +527,39 @@ def render_participation_map(
 ) -> None:
     additions = additions or ParticipationState()
     st.markdown(
-        '<div class="map-origin">AI conversation<br>temporary orientation</div>',
+        '<div class="map-origin">This conversation<br>a temporary orientation—not the destination</div>',
         unsafe_allow_html=True,
     )
     first_row = st.columns(3)
     with first_row[0]:
-        render_map_node("People", participation.people, additions.people)
+        render_map_node("People", participation.people, "No one named yet", additions.people)
     with first_row[1]:
-        render_map_node("Communities", participation.communities, additions.communities)
+        render_map_node(
+            "Communities",
+            participation.communities,
+            "No community named yet",
+            additions.communities,
+        )
     with first_row[2]:
         render_map_node(
-            "Responsibilities", participation.responsibilities, additions.responsibilities
+            "Responsibilities",
+            participation.responsibilities,
+            "Not yet surfaced",
+            additions.responsibilities,
         )
     second_row = st.columns(2)
     with second_row[0]:
-        render_map_node("New contexts", participation.new_contexts, additions.new_contexts)
+        render_map_node(
+            "New contexts",
+            participation.new_contexts,
+            "No new context yet",
+            additions.new_contexts,
+        )
     with second_row[1]:
         render_map_node(
             "Next participation",
             participation.next_participation,
+            "Waiting for your words",
             additions.next_participation,
         )
 
@@ -514,10 +599,10 @@ def render_conclusion() -> None:
     st.markdown(
         f"""
         <div class="release">
-          <div class="eyebrow">The conversation ends here</div>
+          <div class="eyebrow">The conversation has done its part.</div>
           <h1>The next part belongs in your world.</h1>
           <p><strong>{escape(card['next_participation'])}</strong></p>
-          <p>This is concrete enough to carry forward—and yours to revise there.</p>
+          <p>Participation continues beyond this conversation.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -540,7 +625,9 @@ def render_conclusion() -> None:
         ,
         unsafe_allow_html=True,
     )
-    st.info("No further response is needed here.")
+    st.info(
+        "Take this as participation you can revise in the world—not an instruction from the AI."
+    )
 
 
 def main() -> None:
