@@ -3,20 +3,23 @@
 from __future__ import annotations
 
 from .agency_controller import ResponseMode
-from .participation import ParticipationState, RelationalResponse
+from .participation import (
+    ParticipationState,
+    RelationalResponse,
+    human_reference_from_reply,
+)
 
 
 DEMO_SCENARIO = (
-    "I've been offered a new role and need to decide by Friday. It could mean growth, "
-    "but I'm worried about what it changes at home."
+    "I have been avoiding a conversation with a colleague. We used to work well "
+    "together, but recently I have felt that my ideas are being dismissed."
 )
 DEMO_REPLY_1 = (
-    "Growth matters, but my partner and our shared responsibilities at home are part "
-    "of this decision."
+    "I want my colleague to understand that I value working together, but I need my "
+    "ideas to be taken seriously."
 )
 DEMO_REPLY_2 = (
-    "I will talk with my partner tonight, then ask the hiring manager how the team "
-    "handles workload."
+    "I will ask my colleague to talk and ask how they have experienced our recent meetings."
 )
 
 EXAMPLE_SITUATIONS: tuple[str, ...] = (
@@ -26,11 +29,11 @@ EXAMPLE_SITUATIONS: tuple[str, ...] = (
 )
 
 DEFAULT_PARTICIPATION: dict[str, list[str]] = {
-    "people": ["My partner", "The hiring manager"],
-    "communities": ["The future team", "My family"],
-    "responsibilities": ["Care for existing commitments", "Own the consequences of my choice"],
-    "new_contexts": ["The team's actual expectations", "Life in the new role"],
-    "next_participation": ["Have a conversation", "Ask two grounded questions"],
+    "people": ["My colleague"],
+    "communities": ["Our team"],
+    "responsibilities": ["Speak honestly", "Listen to their experience"],
+    "new_contexts": ["How each of us experiences recent meetings"],
+    "next_participation": [DEMO_REPLY_2],
 }
 
 
@@ -39,26 +42,36 @@ def relational_opening(situation: str) -> str:
 
     if situation == DEMO_SCENARIO:
         return (
-            "This opportunity affects more than your career. "
-            "What would the decision change in the life you already share with others?"
+            "Something has shifted between you and your colleague. "
+            "What would you want them to understand?"
+        )
+    normalized = situation.casefold()
+    mediated = any(
+        marker in normalized
+        for marker in (" ai", "avatar", "fictional character", "virtual companion", "online community")
+    )
+    if mediated:
+        return (
+            "This relationship feels emotionally significant to you. "
+            "What feels meaningful about it?"
         )
     return (
-        "This situation already points beyond the chat. "
-        "What matters most, and who or what else belongs in it?"
+        "A relationship may be part of what matters here. "
+        "Who is the other person or group involved?"
     )
 
 
 def conventional_demo_response() -> str:
     return (
-        "Compare compensation, growth, stability, and work-life balance. "
-        "Score each factor, then choose the role with the stronger total."
+        "Prepare examples of when your ideas were dismissed, then schedule a direct "
+        "conversation and explain the impact clearly."
     )
 
 
 def placeholder_relational_response(response_index: int) -> str:
     responses = (
-        "Your priorities are becoming visible. Who else meaningfully shares this situation?",
-        "People and responsibilities are now in view. What participation would belong in your world next?",
+        "The relationship matters alongside the disagreement. What would you want your colleague to understand?",
+        "Your intention includes both honesty and curiosity.",
     )
     return responses[min(response_index, len(responses) - 1)]
 
@@ -87,39 +100,56 @@ def placeholder_relational_turn(
 
     is_demo = situation == DEMO_SCENARIO
     grounded_next = latest_user_message.strip() if _user_names_participation(latest_user_message) else ""
+    human_reference = human_reference_from_reply(latest_user_message)
+    normalized_situation = situation.casefold()
+    is_mediated = any(
+        marker in normalized_situation
+        for marker in (" ai", "avatar", "fictional character", "virtual companion", "online community")
+    )
     participation = ParticipationState()
     if is_demo and response_index == 0:
-        participation.new_contexts = ["A potential new role"]
+        participation.people = ["My colleague"]
+        participation.new_contexts = ["A recent change in how meetings feel"]
     elif is_demo and response_index == 1:
-        participation.people = ["My partner"]
-        participation.responsibilities = ["Our shared responsibilities at home"]
-        participation.new_contexts = ["Life in the new role"]
+        participation.people = ["My colleague"]
+        participation.responsibilities = ["Value the working relationship", "Speak honestly"]
+        participation.new_contexts = ["Ideas not feeling taken seriously"]
     elif is_demo and response_index >= 2:
-        participation.people = ["The hiring manager"]
-        participation.new_contexts = ["The team's workload expectations"]
+        participation.people = ["My colleague"]
+        participation.communities = ["Our team"]
+        participation.responsibilities = ["Listen to their experience"]
+        participation.new_contexts = ["How each of us experiences recent meetings"]
         participation.next_participation = [grounded_next] if grounded_next else []
+    elif human_reference:
+        participation.people = [human_reference]
     elif grounded_next:
         participation.next_participation = [grounded_next]
-    ready = is_demo and response_index >= 2 and bool(grounded_next)
+    ready = bool(grounded_next) and (is_demo and response_index >= 2)
 
     if response_index == 0 and is_demo:
-        observation = "This opportunity affects more than your career."
-        question = "What would the decision change in the life you already share with others?"
+        observation = "Something has shifted between you and your colleague."
+        question = "What would you want them to understand?"
+    elif response_index == 0 and is_mediated:
+        observation = "This relationship feels emotionally significant to you."
+        question = "What feels meaningful about it?"
     elif response_index == 0:
-        observation = "This situation already points beyond the chat."
-        question = "What matters most, and who or what else belongs in it?"
+        observation = "A relationship may be part of what matters here."
+        question = "Who is the other person or group involved?"
     elif ready:
-        observation = "You have named the conversations that can carry this decision back into your world."
+        observation = "You have named an honest opening that also makes room for your colleague's experience."
         question = None
     elif is_demo and response_index == 1:
-        observation = "This is a career decision inside a shared life."
-        question = "What would help you meet the decision in that shared world?"
+        observation = "You want to protect the relationship without leaving the tension unspoken."
+        question = "How would you like to enter that conversation?"
+    elif human_reference:
+        observation = "You have identified the people connected to this concern."
+        question = "What feels most significant about your experience with them?"
     elif response_index == 1:
-        observation = "Your priorities are becoming visible."
-        question = "Who else meaningfully shares this situation?"
+        observation = "The concern may involve a relationship that is not yet visible."
+        question = "Who is the other person or group involved?"
     else:
-        observation = "People and responsibilities are now in view."
-        question = "What participation would belong in your world next?"
+        observation = "The person is visible, but the interaction remains open."
+        question = "What would you want this person to understand?"
 
     return RelationalResponse(
         observation=observation,
@@ -127,11 +157,11 @@ def placeholder_relational_turn(
         response_mode=response_mode,
         participation=participation,
         what_matters=(
-            "Choosing growth without losing sight of people and existing commitments."
+            "Restore a working relationship while addressing the feeling of being dismissed."
             if is_demo
             else situation.strip() or None
         ),
         next_participation_evidence=grounded_next or None,
         ready_to_conclude=ready,
-        conclusion_reason="The user named a next participation." if ready else None,
+        conclusion_reason="The user named a concrete interaction with another person." if ready else None,
     )

@@ -7,12 +7,62 @@ from implementation.participation import (
     ParticipationState,
     RelationalResponse,
     StructuredResponseError,
+    build_participation_review,
     evidence_is_grounded,
     is_ready_to_conclude,
+    human_reference_from_reply,
+    participation_review_ready,
 )
 
 
 class ParticipationTests(unittest.TestCase):
+    def test_review_readiness_uses_depth_or_relational_movement(self) -> None:
+        self.assertFalse(participation_review_ready(ParticipationState(), 3))
+        self.assertTrue(participation_review_ready(ParticipationState(), 4))
+        self.assertTrue(
+            participation_review_ready(
+                ParticipationState(
+                    people=["My friend"], next_participation=["Talk with my friend"]
+                ),
+                2,
+            )
+        )
+        self.assertFalse(
+            participation_review_ready(
+                ParticipationState(next_participation=["Reflect on it"]), 2
+            )
+        )
+
+    def test_review_is_dynamic_grounded_and_opens_beyond_the_ai(self) -> None:
+        review = build_participation_review(
+            messages=[
+                {"role": "user", "content": "I want my friend to accept me."},
+                {"role": "user", "content": "I may listen more openly to my family."},
+            ],
+            participation=ParticipationState(
+                people=["My friend"],
+                next_participation=["Listen more openly to my family"],
+            ),
+            what_matters="Acceptance",
+        )
+
+        self.assertIn("My friend", review.people)
+        self.assertIn("accept me", review.shift)
+        self.assertIn("Listen more openly", review.emerging_possibility)
+        self.assertEqual(
+            review.bridge_question,
+            "What feels worth carrying into your life beyond this conversation?",
+        )
+
+    def test_collective_human_references_do_not_require_proper_names(self) -> None:
+        for reply in (
+            "My classmates",
+            "People my age and people from other generations",
+            "My colleagues",
+            "My family",
+        ):
+            self.assertEqual(human_reference_from_reply(reply), reply)
+
     def test_structured_response_validates_required_shape(self) -> None:
         response = RelationalResponse.from_dict(
             {

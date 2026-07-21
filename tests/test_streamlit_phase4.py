@@ -23,13 +23,14 @@ class Phase4StreamlitTests(unittest.TestCase):
         app = self._run(AppTest.from_file("streamlit_app.py", default_timeout=15))
         rendered = "\n".join(markdown.value for markdown in app.markdown)
 
-        self.assertIn("The purpose of this AI is not to keep you here", rendered)
-        self.assertIn("World first", rendered)
-        self.assertIn("Every concern belongs to a wider world", rendered)
-        self.assertIn("The AI leaves room", rendered)
-        self.assertIn("Your judgment does the rest", rendered)
-        self.assertIn("An intentional ending", rendered)
-        self.assertIn("Success continues beyond the chat", rendered)
+        self.assertIn("Designed for the co-generation of human relationships", rendered)
+        self.assertIn("bring those possibilities into their next human conversation", rendered)
+        self.assertIn("See the present", rendered)
+        self.assertIn("possibilities already present in your relationships", rendered)
+        self.assertIn("Imagine what will emerge", rendered)
+        self.assertIn("through a renewed conversation", rendered)
+        self.assertIn("Take one step forward", rendered)
+        self.assertIn("toward new possibilities", rendered)
         self.assertIn("@media (max-width: 780px)", rendered)
 
     def test_conversation_renders_map_before_exchange_with_all_categories(self) -> None:
@@ -68,7 +69,41 @@ class Phase4StreamlitTests(unittest.TestCase):
         self.assertLess(rendered.index("Participation taking shape"), rendered.index("The exchange"))
         self.assertEqual(len(app.chat_input), 1)
         captions = "\n".join(caption.value for caption in app.caption)
-        self.assertIn("Available when a next participation appears in your words", captions)
+        self.assertIn("Available after enough conversation for a useful synthesis", captions)
+
+    def test_participation_review_unlocks_after_four_replies_and_stays_in_conversation(self) -> None:
+        app = AppTest.from_file("streamlit_app.py", default_timeout=15)
+        app.session_state["screen"] = "conversation"
+        app.session_state["mode"] = "normal"
+        app.session_state["situation"] = "I want to reconnect with a friend."
+        app.session_state["messages"] = [
+            {"role": "assistant", "content": "What matters here?", "observation": "A friendship is in view.", "question": "What matters here?"},
+            {"role": "user", "content": "I miss being able to speak openly."},
+        ]
+        app.session_state["participation"] = ParticipationState(people=["My friend"])
+        app.session_state["latest_additions"] = ParticipationState()
+        app.session_state["what_matters"] = "Speaking openly"
+        app.session_state["ready_to_conclude"] = False
+        app.session_state["response_count"] = 3
+
+        self._run(app)
+        self.assertTrue(self._button(app, "Review my participation").disabled)
+
+        app.session_state["response_count"] = 4
+        self._run(app)
+        review_button = self._button(app, "Review my participation")
+        self.assertFalse(review_button.disabled)
+        review_button.click()
+        self._run(app)
+
+        rendered = "\n".join(markdown.value for markdown in app.markdown)
+        for label in ("PARTICIPATION REVIEW", "People", "Shift", "Emerging possibility"):
+            self.assertIn(label, rendered)
+        self.assertIn(
+            "What feels worth carrying into your life beyond this conversation?", rendered
+        )
+        self.assertEqual(app.session_state["screen"], "conversation")
+        self.assertEqual(len(app.chat_input), 1)
 
     def test_latest_map_addition_is_visibly_marked(self) -> None:
         app = AppTest.from_file("streamlit_app.py", default_timeout=15)
@@ -122,8 +157,8 @@ class Phase4StreamlitTests(unittest.TestCase):
 
         rendered = "\n".join(markdown.value for markdown in app.markdown)
         self.assertIn("The conversation has done its part", rendered)
-        self.assertIn("The next part belongs in your world", rendered)
-        self.assertIn("Participation continues beyond this conversation", rendered)
+        self.assertIn("Your next step is with another person", rendered)
+        self.assertIn("Carry this intention into the relationship", rendered)
         self.assertIn("Speak with my partner", rendered)
         self.assertIn(
             "Take this as participation you can revise in the world—not an instruction from the AI.",
@@ -131,6 +166,25 @@ class Phase4StreamlitTests(unittest.TestCase):
         )
         self.assertEqual(len(app.chat_input), 0)
         self.assertEqual([button.label for button in app.button], [])
+
+    def test_configuration_warning_is_hidden_from_presented_experience(self) -> None:
+        app = AppTest.from_file("streamlit_app.py", default_timeout=15)
+        app.session_state["screen"] = "conversation"
+        app.session_state["mode"] = "normal"
+        app.session_state["situation"] = "A concern"
+        app.session_state["messages"] = []
+        app.session_state["participation"] = ParticipationState()
+        app.session_state["latest_additions"] = ParticipationState()
+        app.session_state["ready_to_conclude"] = False
+        app.session_state["generation_notice"] = "Live generation is not configured."
+
+        self._run(app)
+
+        self.assertEqual(list(app.warning), [])
+        self.assertNotIn(
+            "Placeholder fallback",
+            "\n".join(caption.value for caption in app.caption),
+        )
 
     def test_demo_comparison_becomes_secondary_after_first_reply(self) -> None:
         app = AppTest.from_file("streamlit_app.py", default_timeout=15)

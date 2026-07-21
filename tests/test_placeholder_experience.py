@@ -15,24 +15,24 @@ from implementation.placeholder_experience import (
 
 
 class PlaceholderExperienceTests(unittest.TestCase):
-    def test_demo_opening_returns_decision_to_user(self) -> None:
+    def test_demo_opening_centers_the_human_relationship(self) -> None:
         response = relational_opening(DEMO_SCENARIO)
 
-        self.assertIn("more than your career", response)
-        self.assertIn("share with others", response)
+        self.assertIn("colleague", response)
+        self.assertIn("want them to understand", response)
 
     def test_demo_responses_have_different_orientations(self) -> None:
         conventional = conventional_demo_response()
         relational = relational_opening(DEMO_SCENARIO)
 
-        self.assertIn("choose the role", conventional)
-        self.assertIn("share with others", relational)
+        self.assertIn("schedule a direct conversation", conventional)
+        self.assertIn("colleague", relational)
 
     def test_placeholder_conversation_opens_toward_participation(self) -> None:
         response = placeholder_relational_response(1)
 
-        self.assertIn("participation", response)
-        self.assertIn("your world", response)
+        self.assertNotIn("participation", response)
+        self.assertNotIn("?", response)
 
     def test_participation_map_has_all_blueprint_categories(self) -> None:
         self.assertEqual(
@@ -75,14 +75,38 @@ class PlaceholderExperienceTests(unittest.TestCase):
             2, DEMO_SCENARIO, DEMO_REPLY_2, ResponseMode.PROPOSE_ACTION
         )
 
-        self.assertEqual(opening.participation.people, [])
+        self.assertEqual(opening.participation.people, ["My colleague"])
         self.assertEqual(opening.participation.responsibilities, [])
-        self.assertEqual(opening.participation.new_contexts, ["A potential new role"])
-        self.assertEqual(first_reply.participation.people, ["My partner"])
+        self.assertEqual(opening.participation.new_contexts, ["A recent change in how meetings feel"])
+        self.assertEqual(first_reply.participation.people, ["My colleague"])
         self.assertTrue(first_reply.participation.responsibilities)
         self.assertFalse(first_reply.ready_to_conclude)
         self.assertEqual(second_reply.next_participation_evidence, DEMO_REPLY_2)
         self.assertTrue(second_reply.ready_to_conclude)
+        self.assertIsNone(second_reply.question)
+
+    def test_fallback_advances_after_collective_human_reference(self) -> None:
+        reply = "People my age and people from other generations"
+
+        turn = placeholder_relational_turn(
+            1,
+            "I feel attached to my virtual avatar.",
+            reply,
+            ResponseMode.RECONNECT_WORLD,
+        )
+
+        self.assertEqual(turn.participation.people, [reply])
+        self.assertNotIn("who", turn.question.casefold())
+        self.assertIn("experience", turn.question.casefold())
+
+    def test_fallback_mediated_opening_explores_meaning(self) -> None:
+        response = relational_opening(
+            "I feel deeply attached to my virtual avatar. Is that abnormal?"
+        )
+
+        self.assertIn("significant", response.casefold())
+        self.assertIn("meaningful", response.casefold())
+        self.assertNotIn("concern", response.casefold())
 
 
 if __name__ == "__main__":

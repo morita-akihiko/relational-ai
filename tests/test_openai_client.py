@@ -39,10 +39,13 @@ class OpenAIClientTests(unittest.TestCase):
         )
 
     def test_prompt_policies_make_the_philosophical_difference_explicit(self) -> None:
-        self.assertIn("world beyond this conversation", RELATIONAL_INSTRUCTIONS)
+        self.assertIn("meaningful next interaction", RELATIONAL_INSTRUCTIONS)
         self.assertIn("finite conversation", RELATIONAL_INSTRUCTIONS)
         self.assertIn("about 18 words", RELATIONAL_INSTRUCTIONS)
         self.assertIn("Never exceed 28 observation words", RELATIONAL_INSTRUCTIONS)
+        self.assertIn("never ask for a next", RELATIONAL_INSTRUCTIONS)
+        self.assertIn("relationships with other people", RELATIONAL_INSTRUCTIONS)
+        self.assertIn("proper name is not required", RELATIONAL_INSTRUCTIONS)
         self.assertIn("direct answer", CONVENTIONAL_DEMO_INSTRUCTIONS)
         self.assertIn("35 words", CONVENTIONAL_DEMO_INSTRUCTIONS)
         self.assertNotIn("Article 12", CONVENTIONAL_DEMO_INSTRUCTIONS)

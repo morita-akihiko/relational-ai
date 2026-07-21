@@ -2,3 +2,14 @@ __pycache__/
 *.py[cod]
 .venv/
 
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Logs and operating-system files
+*.log
+.DS_Store
+Thumbs.db
+
