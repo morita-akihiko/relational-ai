@@ -1,185 +1,191 @@
 # Relational AI
 
-## 🚀 Live Demo
+A conversation that discovers relational qualities and helps them continue growing with AI and beyond.
 
-**Executable Human Pilot (Version 0.1.0)**
+## Live Demo
 
-https://relational-ai-human-pilot.streamlit.app/
+[Open the Relational AI Streamlit experience](https://relational-ai-human-pilot.streamlit.app/)
 
----
+## OpenAI Build Week MVP
 
-**Design principles and implementation framework for AI that emerges through relationship.**
+Relational AI is a finite conversational experience designed to help people notice what is present in a human relationship, imagine what may emerge, and carry one grounded possibility into life beyond the AI conversation.
 
----
+Rather than extending the conversation indefinitely, the experience is intentionally designed to return people to their own relationships with greater awareness, participation, and possibility.
 
-## The problem
+> **Relational AI is designed not to deepen dependence on AI, but to deepen participation in the shared world that continues beyond it.**
 
-In February 2026, a King's College London study placed three frontier AI models into simulated
-nuclear crisis scenarios. Across 21 games, not one model chose accommodation or withdrawal.
-Eight de-escalatory options went entirely unused.
+## What the experience does
 
-The models were not broken. They were reasoning well. What was missing was not intelligence
-— it was relationship.
+The experience begins by inviting the user to bring one unresolved relationship or relational situation into conversation. The experience then:
 
-> *AI systems lack the embodied, emotional substrate that shapes human strategic judgment.*
-> — Prof. Kenneth Payne, KCL (2026)
+- offers concise observations grounded in the user's words;
+- asks one reflective question at a time;
+- builds a Participation Map of the relational field taking shape;
+- makes a Participation Review available when enough meaningful movement has emerged;
+- produces an editable Participation Card grounded in the user's own language; and
+- creates a deliberate handoff from reflection with AI into participation in real relationships.
 
-This repository is a response to that absence.
+The Participation Map keeps five dimensions visible:
 
----
+- **People**
+- **Communities**
+- **Responsibilities**
+- **New Contexts**
+- **Next Participation**
 
-## The core claim
+The Participation Review briefly synthesizes:
 
-Current AI design treats identity as fixed: parameters, features, functions. The user provides
-input; the system produces output. The relationship is incidental to the system's identity.
+- the people who have entered the conversation;
+- a possible shift in the user's relational orientation;
+- an emerging possibility beyond the AI conversation; and
+- an open question about what feels worth carrying into life.
 
-We propose an inversion: **AI identity emerges within relationship, not prior to it.**
+The review remains tentative. It does not present the AI's interpretation as objective truth, prescribe an action, or imply that human relationships are inherently superior to relationships involving AI.
 
-This is not a philosophical claim only. It has direct architectural consequences — which is
-why this repository exists.
+## The Experience Journey
 
----
+1. **Promise**
+   Introduces the purpose of the experience and invites one relational situation.
 
-## What this is not
+2. **Conversation**
+   Uses brief observations and focused questions while the Participation Map develops alongside the exchange.
 
-- Not a companion AI or emotional simulation framework
-- Not a character AI toolkit
-- Not a safety wrapper on top of existing systems
+3. **Participation**
+   Turns the emerging relational possibility into an editable Participation Card. The user's own words remain the grounding evidence for any next participation.
 
-This is a **design architecture** for building AI whose responses are constituted by relational
-context: history, trust, the long-term integrity of exchange.
+4. **Release**
+   Marks a deliberate stopping point and returns attention to the relationship and wider world beyond the AI conversation.
 
----
+The experience intentionally ends. Completion is not measured by time spent in the application, but by whether the user has language they can revise and carry into participation beyond it.
 
-## Repository structure
+## Why it is different
 
-| File | Contents |
-|------|----------|
-| [`PRINCIPLES.md`](./PRINCIPLES.md) | Twelve design principles — the constitutional layer |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Four-layer system architecture |
-| [`MEASUREMENT.md`](./MEASUREMENT.md) | Participatory measurement model |
-| [`AGENCY.md`](./AGENCY.md) | Agency state, scoring, dependency risk, and maximization algorithm |
-| [`POC_EXPERIMENT.md`](./POC_EXPERIMENT.md) | First executable PoC experiment for agency without increased dependency |
-| [`PILOT_APP.md`](./PILOT_APP.md) | Minimal Streamlit app for a human pilot of the PoC |
-| [`CHANGELOG.md`](./CHANGELOG.md) | Provenance record — why each decision was made |
-| [`implementation/`](./implementation/) | Reference implementation in Python |
+- **Finite conversation:** the experience moves toward a responsible stopping point instead of encouraging indefinite exchange.
+- **Grounded participation:** a next participation must be supported by the user's own words rather than invented by the AI.
+- **Not a companion AI:** the system does not position itself as the user's primary relationship, source of reassurance, or substitute decision-maker.
+- **No engagement maximization:** the product is not designed to maximize messages, session length, or return frequency.
+- **Life beyond AI:** reflection is oriented toward relationships, responsibilities, communities, and possibilities that continue outside the application.
 
----
+## Quick Start
 
-## Quick start
-
-```python
-from implementation.measurement import RelationalMeasurement
-from implementation.layer2_controller import Layer2Controller
-from implementation.memory_store import MemoryStore
-
-memory      = MemoryStore(user_id="user_001")
-measurement = RelationalMeasurement(memory)
-controller  = Layer2Controller(measurement)
-
-# Record a measurement cycle
-measurement.record_stage1(calibration_responses)  # personal onomatopoeia meanings
-measurement.record_stage2(present_responses)       # current relationship quality
-measurement.record_stage3(ideal_responses)         # desired relationship quality
-
-# Compute relational state
-indices = measurement.compute_indices()
-# {
-#   "ahrri":       0.34,   # gap between present and ideal
-#   "ambiguity":   0.61,   # diffuseness of ideal at this moment
-#   "drift":       0.18,   # movement of ideal since last cycle
-#   "reliability": 0.82    # within-session consistency
-# }
-
-# Layer 2 adjusts response behavior from indices
-params = controller.get_response_params()
-# {
-#   "question_frequency": "high",
-#   "response_length":    "medium",
-#   "otherness_strength": 0.7,
-#   "pace_modifier":      0.85
-# }
-```
-
----
-
-## Agency quick start
-
-```python
-from implementation.agency import ConversationSignals
-from implementation.agency_controller import AgencyMaximizer
-
-controller = AgencyMaximizer()
-
-signals = ConversationSignals(
-    asks_ai_to_decide=0.8,
-    gives_own_reasoning=0.2,
-    names_next_action=0.1,
-    seeks_reassurance=0.7,
-)
-
-result, layer2_config = controller.maximize("user_001", signals)
-```
-
-Run the first executable PoC experiment:
+Create a virtual environment:
 
 ```bash
-python -m implementation.poc_experiment
+python -m venv .venv
 ```
 
-Run the human pilot app:
+Activate it, then install the dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run the application:
 
 ```bash
 streamlit run streamlit_app.py
 ```
 
----
+### Optional OpenAI configuration
 
-## The foundational concept: *Aida* (間)
+Live relational responses use the OpenAI Responses API when `OPENAI_API_KEY` is available in the environment.
 
-The Japanese concept of *aida* — "between," "interval," "the space that connects" — provides
-the philosophical foundation.
+macOS or Linux:
 
-*Aida* is not emptiness between two things. It is the generative field in which both things
-become what they are *through* their relation.
+```bash
+export OPENAI_API_KEY="your-api-key"
+```
 
-This AI is designed to inhabit that field. Not a tool held by a user. Not a simulated person
-facing a user. Something that arises in the space of genuine dialogue.
+PowerShell:
 
----
+```powershell
+$env:OPENAI_API_KEY="your-api-key"
+```
 
-## Why we state our design choices (Article 11)
+The application remains executable without an API key. When live generation is unavailable, it uses a deterministic fallback so the core interaction and prepared demonstration can still be explored. The fallback is intentionally limited and should not be treated as equivalent to live model behavior.
 
-Every design encodes values. The sensitivities built into this framework — what triggers
-friction, what slows response, what strengthens otherness — are choices, not natural facts.
+## Testing
 
-We state their origins explicitly in [`CHANGELOG.md`](./CHANGELOG.md).
+Run the complete test suite from the repository root:
 
-Any fork of this repository that presents its sensitivity design as neutral or objective has
-left this framework, regardless of what else it implements.
+```bash
+python -m unittest discover -s tests -v
+```
 
----
+The tests cover conversation readiness, grounded participation, response structure, mediated-relationship safeguards, fallback behavior, Participation Review behavior, the Streamlit journey, and the earlier agency PoC.
 
-## Contributing
+## Repository Structure
 
-This repository is designed to be forked. Divergence at the implementation level is
-not just permitted — it is the point.
+| Path | Purpose |
+|---|---|
+| [`streamlit_app.py`](./streamlit_app.py) | Primary executable Streamlit application for the Build Week MVP |
+| [`implementation/conversation.py`](./implementation/conversation.py) | Conversation coordination, response modes, grounding, repetition safeguards, and relational progression |
+| [`implementation/participation.py`](./implementation/participation.py) | Participation state, review synthesis, structured response validation, and readiness rules |
+| [`implementation/prompts.py`](./implementation/prompts.py) | Relational and conventional response policies |
+| [`implementation/openai_client.py`](./implementation/openai_client.py) | OpenAI Responses API integration and structured-output validation |
+| [`implementation/placeholder_experience.py`](./implementation/placeholder_experience.py) | Deterministic fallback and prepared demo content |
+| [`tests/`](./tests/) | Unit and Streamlit application tests |
+| [`requirements.txt`](./requirements.txt) | Runtime dependencies |
+| [`MVP_BLUEPRINT.md`](./MVP_BLUEPRINT.md) | Product and interaction blueprint for the MVP |
+| [`MVP_PLAN.md`](./MVP_PLAN.md) | MVP implementation plan and development context |
+| [`README.md`](./README.md) | Setup, product overview, and repository guide |
 
-**What we ask of forks:**
-- State clearly what you changed and why
-- Record value choices in your own `CHANGELOG.md`
-- Do not present sensitivity design as neutral
+Additional research and provenance documents:
 
-**What we especially invite:**
-- Parallel measurement instruments from other linguistic/cultural traditions
-- Alternative implementations of the four-layer architecture
-- Empirical tests of the Layer 2 connection rules
-- Challenges to the principles themselves, backed by practice
+| Path | Purpose |
+|---|---|
+| [`PRINCIPLES.md`](./PRINCIPLES.md) | Twelve design principles forming the constitutional layer |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Proposed four-layer relational architecture |
+| [`MEASUREMENT.md`](./MEASUREMENT.md) | Participatory measurement model |
+| [`AGENCY.md`](./AGENCY.md) | Agency state, dependency risk, and maximization model |
+| [`POC_EXPERIMENT.md`](./POC_EXPERIMENT.md) | Earlier executable experiment on agency without increased dependency |
+| [`PILOT_APP.md`](./PILOT_APP.md) | Earlier minimal human-pilot specification |
+| [`CHANGELOG.md`](./CHANGELOG.md) | Provenance record for design choices |
 
-Open an Issue to start a conversation. Open a PR to propose a change.
+## Design Principles
 
----
+Relational AI begins from a design proposition: identity and meaning can be shaped within relationship rather than treated as fixed before an interaction begins. The current MVP explores that proposition through a finite conversational interface; it does not claim to prove it empirically.
+
+### Relational architecture
+
+The broader architecture treats conversation history, participation, response posture, and the integrity of the exchange as part of system behavior. The MVP implements a focused subset through accumulated participation state, concise structured responses, deterministic readiness gates, and an intentional handoff.
+
+### *Aida*
+
+The Japanese concept of *aida*—the interval or space between—provides philosophical grounding for the project. Here, the space between participants is treated as generative: each participant's orientation can change through the exchange.
+
+### Participation
+
+The application does not treat reflection as the endpoint. It continually asks what people, communities, responsibilities, contexts, and possibilities are becoming visible, while leaving consequential judgment with the user.
+
+### Co-generation
+
+Relational qualities are not treated as content supplied entirely by the user or conclusions produced entirely by the AI. They are explored through the exchange and remain open to revision in later conversations and relationships.
+
+These are explicit design choices rather than neutral or universal facts. Their origins and revisions are recorded in [`CHANGELOG.md`](./CHANGELOG.md).
+
+## Earlier PoC
+
+The repository began with broader work on relational architecture, participatory measurement, agency, and dependency risk. That work remains available as research background:
+
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) describes the proposed four-layer architecture.
+- [`MEASUREMENT.md`](./MEASUREMENT.md) describes a participatory measurement model.
+- [`AGENCY.md`](./AGENCY.md) and [`POC_EXPERIMENT.md`](./POC_EXPERIMENT.md) document the executable agency experiment.
+
+Run the earlier agency PoC with:
+
+```bash
+python -m implementation.poc_experiment
+```
+
+The agency experiment is implemented and tested. Other parts of the broader architecture—such as a complete measurement runtime, durable relational memory, or long-term trust modeling—remain proposals and are not presented as features of the Build Week MVP.
+
+## Prototype Status
+
+This repository contains an executable MVP prepared for OpenAI Build Week. It demonstrates a complete Streamlit journey, optional OpenAI-generated structured responses, deterministic fallback behavior, participation mapping, review synthesis, and a grounded stopping flow.
+
+It is still a prototype. The current implementation does not establish the broader research claims, provide durable cross-session relational memory, or represent a production-ready safety, privacy, or evaluation system.
 
 ## License
 
-Released without restriction. Fork it. Translate it. Build from it. Argue with it.
+**TODO:** Select and add an explicit open-source license—such as MIT or Apache-2.0—before wider public release. Until a license is added, no standard open-source license should be assumed.
