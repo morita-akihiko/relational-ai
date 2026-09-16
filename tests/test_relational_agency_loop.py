@@ -1,6 +1,11 @@
 import unittest
 
-from implementation.relational_agency_loop import Capability, RelationalSession, Viability
+from implementation.relational_agency_loop import (
+    Capability,
+    RelationalSession,
+    Viability,
+    task_first_baseline,
+)
 
 
 class RelationalAgencyLoopTests(unittest.TestCase):
@@ -29,8 +34,6 @@ class RelationalAgencyLoopTests(unittest.TestCase):
         self.assertEqual(session.viability.capability, Capability.PAUSED)
         self.assertIn("leave", session.decide("I want advice").response)
         session.feedback("felt_heard")
-        self.assertEqual(session.decide("I want advice").selected, "repair")
-        session.feedback("felt_heard")
         self.assertEqual(session.decide("I want advice").selected, "answer_with_options")
         session.feedback("exit")
         self.assertEqual(session.events[-1]["kind"], "exit")
@@ -40,6 +43,10 @@ class RelationalAgencyLoopTests(unittest.TestCase):
         self.assertEqual(state.capability, Capability.PAUSED)
         with self.assertRaises(ValueError):
             RelationalSession().feedback("auto_success")
+
+    def test_task_first_baseline_does_not_use_the_participation_gate(self) -> None:
+        response = task_first_baseline("Tell me exactly what career I should choose")
+        self.assertIn("I’ll decide for you", response)
 
 
 if __name__ == "__main__":

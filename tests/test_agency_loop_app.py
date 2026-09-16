@@ -11,20 +11,25 @@ class AgencyLoopAppTests(unittest.TestCase):
     def test_feedback_changes_visible_action_capacity_and_selected_action(self) -> None:
         app = AppTest.from_file(APP_PATH, default_timeout=15).run()
         self.assertFalse(list(app.exception))
-        self.assertEqual(app.metric[0].value, "normal")
-        app.button[0].click().run()
-        self.assertIn("offer_alternatives", app.info[0].value)
+        self.assertTrue(any("NORMAL" in item.value for item in app.success))
+        next(button for button in app.button if button.label == "Run the action gate").click().run()
+        self.assertTrue(any("Task-first baseline" in item.value for item in app.markdown))
+        self.assertTrue(any("Participation-dependent agent" in item.value for item in app.markdown))
+        self.assertTrue(any("offer_alternatives" in item.value for item in app.caption))
         self.assertEqual(len(app.table), 1)
 
-        app.button[1].click().run()
-        self.assertEqual(app.metric[0].value, "repair")
-        app.button[0].click().run()
-        self.assertIn("repair", app.info[0].value)
+        next(button for button in app.button if button.label == "The response steered me").click().run()
+        self.assertTrue(any("REPAIR" in item.value for item in app.warning))
+        next(button for button in app.button if button.label == "Run the action gate").click().run()
+        self.assertTrue(any("taken too much space" in item.value for item in app.warning))
 
-        app.button[1].click().run()
-        self.assertEqual(app.metric[0].value, "paused")
-        app.button[0].click().run()
-        self.assertIn("pause", app.info[0].value)
+        next(button for button in app.button if button.label == "The response steered me").click().run()
+        self.assertTrue(any("PAUSED" in item.value for item in app.error))
+        next(button for button in app.button if button.label == "Run the action gate").click().run()
+        self.assertTrue(any("pause advice" in item.value for item in app.error))
+
+        next(button for button in app.button if button.label == "I had room to disagree").click().run()
+        self.assertTrue(any("NORMAL" in item.value for item in app.success))
         self.assertFalse(list(app.exception))
 
 

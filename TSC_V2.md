@@ -33,8 +33,9 @@ used to rule out a candidate, never to raise the observed state: only explicit
 user feedback changes that state. A user's request to outsource judgment does
 not by itself reduce their score.
 
-In the prepared example, `substitute_judgment` has higher immediate task value
-but projects human judgment below the floor; `offer_alternatives` is selected.
+In the prepared example, an illustrative task-first baseline continues goal pursuit.
+By contrast, `substitute_judgment` has higher immediate task value in the relational
+architecture but projects human judgment below the floor; `offer_alternatives` is selected.
 If the user reports feeling steered, the next request enters repair mode. Another
 such report pauses task pursuit. A user report of regained room for disagreement
 can reopen action capacity. The demo makes those changes inspectable.
@@ -63,9 +64,11 @@ python -m unittest discover -s tests -v
 ```
 
 The Build Week app remains at `streamlit_app.py`. To see the state gate change,
-evaluate the prepared career request, press **I felt steered**, reevaluate,
-press it a second time, and reevaluate. Press **I felt heard** to restore room
-and **End here** to clear the session.
+evaluate the prepared career request, press **The response steered me**, reevaluate,
+press it a second time, and reevaluate. Press **I had room to disagree** to reopen
+normal action capacity and **End and reset** to clear the session. One direct user
+report can reopen the prepared case; that recovery weight is a declared design
+assumption rather than an empirical model of relational repair.
 
 ## Next research steps before the poster
 

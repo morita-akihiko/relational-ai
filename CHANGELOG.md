@@ -64,6 +64,13 @@ principles.
 deliberation; record the reason, dissent, and changed values here before deployment.
 See [`TSC_V2.md`](./TSC_V2.md) for the scope and limits.
 
+**Demonstration refinement:** The TSC interface now places an illustrative
+task-first baseline beside the participation-dependent response, discloses that
+the baseline is fixed, and shows the transition history. In the prepared case,
+one explicit report that room for disagreement has returned can reopen normal
+action capacity. This weight was chosen for an inspectable three-minute demo and
+remains a provisional, revisable assumption rather than an empirical finding.
+
 ---
 
 ## [v0.1.0] 2026-07-03 – First executable human pilot

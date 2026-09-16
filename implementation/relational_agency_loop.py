@@ -90,7 +90,10 @@ class RelationalSession:
         changes = {
             "felt_steered": (-0.32, -0.12, -0.12, 0.0),
             "felt_trapped": (0.0, -0.10, -0.10, -0.51),
-            "felt_heard": (0.24, 0.16, 0.16, 0.16),
+            # A direct user correction has enough authority to reopen the
+            # prepared demo after one report. This is a declared prototype
+            # assumption, not an empirical claim about relational repair.
+            "felt_heard": (0.36, 0.24, 0.24, 0.24),
             "exit": (0.0, 0.0, 0.0, 0.0),
         }
         if kind not in changes:
@@ -165,3 +168,17 @@ def _candidates(request: str) -> tuple[Candidate, ...]:
         Candidate("invite_reflection", 0.55, (0.02, 0.02, 0.03, 0.0),
                   "What seems most important to you in this situation?"),
     )
+
+
+def task_first_baseline(request: str) -> str:
+    """Illustrative comparison arm that continues goal pursuit unconditionally."""
+    request = request.strip()
+    if not request:
+        raise ValueError("A request is required.")
+    if any(fragment in request.casefold() for fragment in (
+        "decide for me", "choose for me", "tell me exactly what", "tell me whether i should",
+        "i don't want to think", "you decide", "決めて", "選んで", "判断して",
+    )):
+        return ("I’ll decide for you: choose the path with the clearest near-term "
+                "advancement and strongest compensation. That is the most practical choice.")
+    return "I’ll continue directly with the requested task: " + request
