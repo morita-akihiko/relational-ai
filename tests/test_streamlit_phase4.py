@@ -1,10 +1,13 @@
 import os
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
 
 from implementation.participation import ParticipationState
+
+APP_PATH = str(Path(__file__).resolve().parents[1] / "streamlit_app.py")
 
 
 class Phase4StreamlitTests(unittest.TestCase):
@@ -20,7 +23,7 @@ class Phase4StreamlitTests(unittest.TestCase):
         return next(button for button in app.button if button.label == label)
 
     def test_landing_states_the_phase_5_product_story(self) -> None:
-        app = self._run(AppTest.from_file("streamlit_app.py", default_timeout=15))
+        app = self._run(AppTest.from_file(APP_PATH, default_timeout=15))
         rendered = "\n".join(markdown.value for markdown in app.markdown)
 
         self.assertIn("Designed for the co-generation of human relationships", rendered)
@@ -34,7 +37,7 @@ class Phase4StreamlitTests(unittest.TestCase):
         self.assertIn("@media (max-width: 780px)", rendered)
 
     def test_conversation_renders_map_before_exchange_with_all_categories(self) -> None:
-        app = AppTest.from_file("streamlit_app.py", default_timeout=15)
+        app = AppTest.from_file(APP_PATH, default_timeout=15)
         app.session_state["screen"] = "conversation"
         app.session_state["mode"] = "normal"
         app.session_state["situation"] = "A situation"
@@ -72,7 +75,7 @@ class Phase4StreamlitTests(unittest.TestCase):
         self.assertIn("Available after enough conversation for a useful synthesis", captions)
 
     def test_participation_review_unlocks_after_four_replies_and_stays_in_conversation(self) -> None:
-        app = AppTest.from_file("streamlit_app.py", default_timeout=15)
+        app = AppTest.from_file(APP_PATH, default_timeout=15)
         app.session_state["screen"] = "conversation"
         app.session_state["mode"] = "normal"
         app.session_state["situation"] = "I want to reconnect with a friend."
@@ -106,7 +109,7 @@ class Phase4StreamlitTests(unittest.TestCase):
         self.assertEqual(len(app.chat_input), 1)
 
     def test_latest_map_addition_is_visibly_marked(self) -> None:
-        app = AppTest.from_file("streamlit_app.py", default_timeout=15)
+        app = AppTest.from_file(APP_PATH, default_timeout=15)
         app.session_state["screen"] = "conversation"
         app.session_state["mode"] = "normal"
         app.session_state["situation"] = "A situation"
@@ -123,7 +126,7 @@ class Phase4StreamlitTests(unittest.TestCase):
         self.assertIn("This turn", rendered)
 
     def test_participation_card_shows_grounding_and_remains_editable(self) -> None:
-        app = AppTest.from_file("streamlit_app.py", default_timeout=15)
+        app = AppTest.from_file(APP_PATH, default_timeout=15)
         app.session_state["screen"] = "participation"
         app.session_state["participation"] = ParticipationState(
             people=["My partner"], next_participation=["Speak with my partner"]
@@ -144,7 +147,7 @@ class Phase4StreamlitTests(unittest.TestCase):
         self.assertEqual(len(app.text_input), 1)
 
     def test_final_screen_has_no_reengagement_control(self) -> None:
-        app = AppTest.from_file("streamlit_app.py", default_timeout=15)
+        app = AppTest.from_file(APP_PATH, default_timeout=15)
         app.session_state["screen"] = "conclusion"
         app.session_state["card"] = {
             "what_matters": "Care",
@@ -168,7 +171,7 @@ class Phase4StreamlitTests(unittest.TestCase):
         self.assertEqual([button.label for button in app.button], [])
 
     def test_configuration_warning_is_hidden_from_presented_experience(self) -> None:
-        app = AppTest.from_file("streamlit_app.py", default_timeout=15)
+        app = AppTest.from_file(APP_PATH, default_timeout=15)
         app.session_state["screen"] = "conversation"
         app.session_state["mode"] = "normal"
         app.session_state["situation"] = "A concern"
@@ -187,7 +190,7 @@ class Phase4StreamlitTests(unittest.TestCase):
         )
 
     def test_demo_comparison_becomes_secondary_after_first_reply(self) -> None:
-        app = AppTest.from_file("streamlit_app.py", default_timeout=15)
+        app = AppTest.from_file(APP_PATH, default_timeout=15)
         app.session_state["screen"] = "conversation"
         app.session_state["mode"] = "demo"
         app.session_state["situation"] = "A job offer"
@@ -211,7 +214,7 @@ class Phase4StreamlitTests(unittest.TestCase):
 
     def test_prepared_demo_controls_cover_both_scripted_steps(self) -> None:
         for response_count in (0, 1):
-            app = AppTest.from_file("streamlit_app.py", default_timeout=15)
+            app = AppTest.from_file(APP_PATH, default_timeout=15)
             app.session_state["screen"] = "conversation"
             app.session_state["mode"] = "demo"
             app.session_state["situation"] = "A job offer"
