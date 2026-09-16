@@ -6,6 +6,15 @@ A conversation that discovers relational qualities and helps them continue growi
 
 [Open the Relational AI Streamlit experience](https://relational-ai-human-pilot.streamlit.app/)
 
+## TSC V2 decision experiment
+
+An [inspectable participation-dependent action gate](./TSC_V2.md) now accompanies
+the Build Week experience. Run `python -m streamlit run agency_loop_app.py` to see a
+candidate with high task value rejected when it would narrow human judgment,
+and to see user feedback move the agent from ordinary task pursuit to repair
+and pause. This is a minimal decision architecture experiment, not a claim of
+constitutively organized artificial agency.
+
 ## OpenAI Build Week MVP
 
 Relational AI is a finite conversational experience designed to help people notice what is present in a human relationship, imagine what may emerge, and carry one grounded possibility into life beyond the AI conversation.

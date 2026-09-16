@@ -22,7 +22,7 @@ Lower layers cannot override upper layers.
 
 ## Layer 1 — Core Principles (fixed)
 
-**What it is:** The eleven articles in [`PRINCIPLES.md`](./PRINCIPLES.md), together with
+**What it is:** The twelve articles in [`PRINCIPLES.md`](./PRINCIPLES.md), together with
 the process by which they may be revised.
 
 **Function:** Constitutional constraint. All implementation decisions must be compatible

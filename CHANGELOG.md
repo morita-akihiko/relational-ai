@@ -29,6 +29,43 @@ This is not a conventional changelog. It is a genealogy of values.
 
 ---
 
+## [v2-experiment] 2026-09-15 — Gate task pursuit on user-correctable participation
+
+**Layer affected:** 2, 3, 4; implements selected commitments from Layer 1.
+
+**What changed:** A separate TSC experiment gives normal, repair, and paused
+action capacity according to the lowest of four provisional participatory
+conditions. Candidate actions have declared projected effects; a candidate whose
+effect would cross the repair threshold cannot be selected for ordinary task
+pursuit. Only explicit user feedback updates observed state.
+
+**Why:** The Build Week MVP made participation visible but did not make the agent's
+action space depend on maintaining its viability. A simple gate tests this bridge
+without claiming that the axioms entail the principles or that intrinsic agency
+has already been constructed.
+
+**Whose concern:** Akihiko Morita's question about implementing the relational
+alignment hypothesis before TSC, including the risk that mere relationship
+dependence permits dominance; the user's capacity to disagree and disengage.
+
+**Alternatives considered:** Automatic improvement after an AI response was
+rejected because it would let the AI certify its own relational success. A single
+average score was rejected because it could mask loss of exit freedom. Penalizing
+requests for direct answers was rejected because preference is not evidence of
+harm. The prepared deterministic case makes all assumptions visible while
+grounded candidate generation remains future work.
+
+**Who decided:** Initial implementation by the project assistant in response to
+the maintainer's request; threshold values and candidate effect sizes are
+provisional design assumptions, not collectively ratified changes to the twelve
+principles.
+
+**Can be revised by:** Project maintainer with participant and research-collaborator
+deliberation; record the reason, dissent, and changed values here before deployment.
+See [`TSC_V2.md`](./TSC_V2.md) for the scope and limits.
+
+---
+
 ## [v0.1.0] 2026-07-03 – First executable human pilot
 
 **Layer affected:** [1 / 2 / 3 / 4]
