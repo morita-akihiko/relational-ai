@@ -198,4 +198,4 @@ It is still a prototype. The current implementation does not establish the broad
 
 ## License
 
-**TODO:** Select and add an explicit open-source license—such as MIT or Apache-2.0—before wider public release. Until a license is added, no standard open-source license should be assumed.
+This project is licensed under the MIT License. See [LICENSE](./LICENSE).
