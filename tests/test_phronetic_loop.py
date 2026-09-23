@@ -21,6 +21,9 @@ class PhroneticLoopTests(unittest.TestCase):
         self.assertIn("Purpose is not user-confirmed", blocked["frame_options"].reasons[0])
         self.assertEqual(session.relational_state.viability, before)
         self.assertIn("Article 12", session.explain())
+        suggested = session.decide(("substitute_judgment",))
+        self.assertIn("clarify_goal", {review.candidate.key for review in suggested.reviews})
+        self.assertEqual(suggested.selected, "clarify_goal")
 
     def test_user_correction_changes_deliberation_without_inventing_consequences(self) -> None:
         session = PhroneticSession(REQUEST)

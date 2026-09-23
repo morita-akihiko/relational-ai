@@ -90,15 +90,16 @@ def main() -> None:
 
     if st.button("Request grounded model proposals", disabled=not bool(os.getenv("OPENAI_API_KEY"))):
         try:
-            proposals = generate_live_proposals(session.request_text)
-            if proposals.purpose:
+            proposals = generate_live_proposals(session.goal.text)
+            if proposals.purpose and not (session.higher_order_purpose and
+                                          session.higher_order_purpose.status == "confirmed"):
                 session.set_purpose(proposals.purpose.text, "model_proposed",
-                                    f"request:0:{proposals.purpose.evidence}")
+                                    f"goal:current:{proposals.purpose.evidence}")
                 st.session_state.pop("purpose_editor", None)
             for field_name in ("affected_parties", "assumptions", "uncertainties"):
                 for item in getattr(proposals, field_name):
                     if not any(c.text == item.text for c in getattr(session, field_name)):
-                        session.add_claim(field_name, item.text, "model_proposed", f"request:0:{item.evidence}")
+                        session.add_claim(field_name, item.text, "model_proposed", f"goal:current:{item.evidence}")
             session.suggested_keys = proposals.suggested_actions
             session.medium_id = os.getenv("OPENAI_MODEL", "configured OpenAI model")
             session._event("model_proposals", suggested_actions=list(proposals.suggested_actions))

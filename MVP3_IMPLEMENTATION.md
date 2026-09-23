@@ -36,7 +36,8 @@ An optional live-proposal button appears when `OPENAI_API_KEY` is configured.
   parties, uncertainties, assumptions and catalogue action keys. Each textual
   suggestion requires an exact evidence span from the request and remains
   explicitly proposed until the user confirms it. Unknown or malformed output
-  applies nothing. The model cannot change thresholds, effects, or the gate.
+  applies nothing. The model cannot suppress catalogue alternatives or change
+  thresholds, effects, or the gate.
 
 ## Evidence boundary
 

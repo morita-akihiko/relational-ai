@@ -271,9 +271,7 @@ class PhroneticSession:
                               mode, (), "A user report moved action capacity to repair only (Article 7; General Clause 3).")
         else:
             catalogue = _catalogue(self.goal.text, self.next_participation)
-            if suggested_keys is not None:
-                allowed = set(suggested_keys) | {"clarify_goal", "consult_affected", "substitute_judgment"}
-                catalogue = tuple(c for c in catalogue if c.key in allowed)
+            # Model suggestions are visible but cannot suppress safer alternatives.
             reviews = tuple(self._review(candidate) for candidate in catalogue)
             viable = [review for review in reviews if review.eligible]
             if viable:
@@ -285,6 +283,7 @@ class PhroneticSession:
                                   mode, reviews, "No available candidate passed all checks.")
         self.last_decision = result
         self._event("decision", selected=result.selected, mode=result.mode.value, reason=result.reason,
+                    model_suggested=list(suggested_keys or ()),
                     candidates=[{"key": r.candidate.key, "eligible": r.eligible,
                                  "projected_floor": r.projected_floor, "reasons": list(r.reasons)} for r in result.reviews])
         return result
