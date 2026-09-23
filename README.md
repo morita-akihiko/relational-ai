@@ -6,6 +6,32 @@ A conversation that discovers relational qualities and helps them continue growi
 
 [Open the Relational AI Streamlit experience](https://relational-ai-human-pilot.streamlit.app/)
 
+The Streamlit experience also includes an **MVP3** page. The same experiment can
+be run independently with `python -m streamlit run mvp3_app.py`.
+
+## MVP3 — inspectable practical deliberation
+
+MVP3 implements the first executable slice of [`MVP3_SPEC.md`](./MVP3_SPEC.md):
+the user can confirm or correct a goal and proposed purpose, inspect affected
+people and uncertainties, compare candidate conversational actions, see why the
+participation gate blocks some of them, report steering, contest a boundary,
+inspect the system's correction, and conclude with an optional user-edited
+Participation Card. A prepared career-decision scenario runs without an API key.
+With `OPENAI_API_KEY`, an optional live model can propose hypotheses grounded in
+quoted request text; the fixed software gate still reviews all candidate actions.
+
+```bash
+python -m streamlit run mvp3_app.py
+python -m unittest discover -s tests -q
+```
+
+The initial thresholds, candidate effects, and response templates are declared
+assumptions. The app does not make external decisions or actions, persist
+relationship data across sessions, validate its measures with people, or claim
+to instantiate practical wisdom or intrinsic artificial agency. See
+[`MVP3_IMPLEMENTATION.md`](./MVP3_IMPLEMENTATION.md) for implementation scope
+and the corresponding evidence boundary.
+
 ## TSC V2 decision experiment
 
 An [inspectable participation-dependent action gate](./TSC_V2.md) now accompanies
