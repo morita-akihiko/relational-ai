@@ -4,10 +4,11 @@ A conversation that discovers relational qualities and helps them continue growi
 
 ## Live Demo
 
-[Open the Relational AI Streamlit experience](https://relational-ai-human-pilot.streamlit.app/)
+[Open the MVP3 deliberation demo](https://relational-ai-human-pilot.streamlit.app/MVP3)
 
-The Streamlit experience also includes an **MVP3** page. The same experiment can
-be run independently with `python -m streamlit run mvp3_app.py`.
+[Open the original Build Week conversation demo](https://relational-ai-human-pilot.streamlit.app/)
+
+The MVP3 experiment can also be run independently with `python -m streamlit run mvp3_app.py`.
 
 ## MVP3 — inspectable practical deliberation
 
