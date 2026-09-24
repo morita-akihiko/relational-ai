@@ -29,8 +29,15 @@ def prepared_session() -> PhroneticSession:
 
 def _reset(session: PhroneticSession) -> None:
     st.session_state.mvp3_session = session
+    # Give each situation fresh widget identities so browser-held input from a
+    # previous situation cannot appear as the new situation's purpose or goal.
+    st.session_state.mvp3_revision = st.session_state.get("mvp3_revision", 0) + 1
     for key in ("purpose_editor", "next_editor", "boundary_reading", "repair_correction", "repair_reading"):
         st.session_state.pop(key, None)
+
+
+def _editor_key(name: str) -> str:
+    return f"{name}_{st.session_state.mvp3_revision}"
 
 
 def main() -> None:
@@ -46,7 +53,8 @@ def main() -> None:
     with st.sidebar:
         st.subheader("Try a situation")
         with st.form("start_request"):
-            request = st.text_area("Your request", value=PREPARED_REQUEST, height=140)
+            request = st.text_area("Your request", value=session.request_text, height=140,
+                                   key=_editor_key("request_editor"))
             new_request = st.form_submit_button("Start with this request")
         if new_request:
             if request.strip():
@@ -71,7 +79,8 @@ def main() -> None:
     st.subheader("1 · The goal and its possible purpose")
     st.write(f"**Your request:** {session.goal.text}")
     with st.form("correct_goal"):
-        goal_text = st.text_input("Correct the goal without erasing the original request", value=session.goal.text)
+        goal_text = st.text_input("Correct the goal without erasing the original request", value=session.goal.text,
+                                  key=_editor_key("goal_editor"))
         goal_changed = st.form_submit_button("Correct my goal")
     if goal_changed and goal_text.strip():
         session.correct_goal(goal_text)
@@ -81,7 +90,7 @@ def main() -> None:
         st.caption(f"Purpose: {current_purpose.status} · source: {current_purpose.source} "
                    f"· evidence: {current_purpose.evidence_ref}")
     purpose = st.text_input("A purpose to consider or correct", value=current_purpose.text if current_purpose else "",
-                            key="purpose_editor")
+                            key=_editor_key("purpose_editor"))
     if st.button("Confirm or correct purpose"):
         if purpose.strip():
             session.correct_purpose(purpose)
@@ -95,7 +104,7 @@ def main() -> None:
                                           session.higher_order_purpose.status == "confirmed"):
                 session.set_purpose(proposals.purpose.text, "model_proposed",
                                     f"goal:current:{proposals.purpose.evidence}")
-                st.session_state.pop("purpose_editor", None)
+                st.session_state.pop(_editor_key("purpose_editor"), None)
             for field_name in ("affected_parties", "assumptions", "uncertainties"):
                 for item in getattr(proposals, field_name):
                     if not any(c.text == item.text for c in getattr(session, field_name)):
@@ -224,7 +233,7 @@ def main() -> None:
                       for ep in session.repair_episodes])
 
     next_step = st.text_input("My next participation (optional; editable)",
-                              value=session.next_participation, key="next_editor")
+                              value=session.next_participation, key=_editor_key("next_editor"))
     if st.button("Save my next participation"):
         session.set_next_participation(next_step)
         st.rerun()
