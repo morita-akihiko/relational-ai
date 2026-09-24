@@ -12,6 +12,7 @@ class Mvp3AppTests(unittest.TestCase):
         app = AppTest.from_file(APP, default_timeout=15).run()
         purpose = next(x for x in app.text_input if x.label == "A purpose to consider or correct")
         self.assertIn("partner and team's interests", purpose.value)
+        old_purpose_key = purpose.key
         purpose.input("An unsaved purpose from the old situation").run()
 
         request = next(x for x in app.text_area if x.label == "Your request")
@@ -20,7 +21,9 @@ class Mvp3AppTests(unittest.TestCase):
 
         self.assertFalse(list(app.exception))
         self.assertEqual(app.session_state["mvp3_session"].higher_order_purpose, None)
-        self.assertEqual(next(x for x in app.text_input if x.label == "A purpose to consider or correct").value, "")
+        new_purpose = next(x for x in app.text_input if x.label == "A purpose to consider or correct")
+        self.assertNotEqual(new_purpose.key, old_purpose_key)
+        self.assertEqual(new_purpose.value, "")
         self.assertEqual(next(x for x in app.text_area if x.label == "Your request").value,
                          "I am considering an international speaking career.")
 
