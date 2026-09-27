@@ -214,3 +214,34 @@ Scope as instructed: cross-references, provenance lines, article numbering, and 
 ### FREEZE
 
 **The consolidated constitution — Preamble; General Clauses 1–3; Articles 1–12 with architectural implications; governance rules; and the Founding Formulation (April 2026) in its historical status — is FROZEN FOR VERSION 2 APPENDIX A as of 21 September 2026.** Any further change requires a new documented deliberation under the revision rule. This entry closes the constitutional work of September 2026 in full: the substantive amendment program (Articles 1, 7, 10, 12; General Clauses 1–3; the Layer 4 requirement; the compatibility-review rule), the harmonization event, the Article 5 amendment, and the freeze.
+
+---
+
+## [2026-09-27] — RECORD CLARIFICATION (non-substantive; no constitutional text changed)
+
+**Status:** Approved by the author on 27 September 2026. This entry changes no constitutional text,
+reopens no deliberation, and alters no earlier entry; the earlier entries remain as written.
+**Participants:** Akihiko Morita (author, deciding voice); Claude (Anthropic), drafter.
+
+1. **Where the records are.** Where earlier entries state that deliberation and review records
+   are "preserved in full as part of this entry," those records are preserved as separate
+   documents held by the author. They are not reproduced inside this changelog. This entry
+   does not state where, or whether, those documents are published; the records index
+   (README.md in this folder) states their current publication status.
+2. **Approvals whose original messages were not recovered.** The author's final approvals of
+   the Article 1/Article 10 package, of Article 7 (including its enactment-time wording
+   repair), and of the Article 5 amendment (including "hold" → "govern") were given as
+   conversation messages. In the materials examined in the September 2026 consistency audit,
+   their content is recorded in the entries above, but the original messages were not
+   recovered. Those entries record the approvals' content; they do not reproduce the
+   messages. Accordingly, the Article 5 entry's "Preserved in full" cannot be confirmed for
+   the author's approval.
+3. **The "verbatim list."** The list headed "Interpretive commitments preserved at enactment
+   (verbatim list, per the author's confirmation)" differs in wording from that confirmation
+   in four of its seven items: the first adds an explanatory clause; the fifth adds a
+   cross-reference; the sixth and seventh change connectives. The author's written
+   confirmation of 21 September 2026, held by the author as a separate document, is the
+   verbatim source.
+4. **Genealogies.** The "Genealogy and admissions" sections condense the genealogies developed
+   in the corresponding reviews; the Article 1/Article 10 entry's "incorporated exactly as
+   developed" should be read accordingly.

@@ -171,13 +171,14 @@ Additional research and provenance documents:
 
 | Path | Purpose |
 |---|---|
-| [`PRINCIPLES.md`](./PRINCIPLES.md) | Twelve design principles forming the constitutional layer |
+| [`PRINCIPLES.md`](./PRINCIPLES.md) | Principles as they stood before September 2026 — superseded, preserved unchanged. The constitution in force is the Second Edition (see [`constitution/`](./constitution/README.md)) |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Proposed four-layer relational architecture |
 | [`MEASUREMENT.md`](./MEASUREMENT.md) | Participatory measurement model |
 | [`AGENCY.md`](./AGENCY.md) | Agency state, dependency risk, and maximization model |
 | [`POC_EXPERIMENT.md`](./POC_EXPERIMENT.md) | Earlier executable experiment on agency without increased dependency |
 | [`PILOT_APP.md`](./PILOT_APP.md) | Earlier minimal human-pilot specification |
-| [`CHANGELOG.md`](./CHANGELOG.md) | Provenance record for design choices |
+| [`CHANGELOG.md`](./CHANGELOG.md) | Design-provenance record (Article 11) for implementation choices; constitutional amendments are recorded separately in [`constitution/`](./constitution/README.md) |
+| [`constitution/`](./constitution/README.md) | Constitutional changelog of the Second Edition (21 September 2026); the authoritative constitutional text is SSRN v2 Appendix A |
 
 ## Design Principles
 
