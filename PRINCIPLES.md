@@ -1,5 +1,19 @@
 # Design Principles
 
+> **Status notice. This is not the constitution in force.**
+> This file preserves, unchanged, the principles as they stood before September 2026:
+> Articles 1–11 as released on 15 April 2026, Article 12 as added to this file on 3 July 2026,
+> and the April 2026 "core definition." The constitution in force is the Second Edition,
+> enacted through documented deliberation on 21 September 2026 and published as Appendix A of
+> [*Relational AI: Constitution, Architecture, and Empirical Evaluation of Relational Development*](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6578778)
+> (SSRN, September 2026). In the Second Edition, Articles 1, 5, 7 and 10 were amended;
+> Article 12 was re-enacted in revised form; Articles 2–4, 6, 8, 9 and 11 received
+> terminological harmonization, and Article 11's architectural implication was extended;
+> a Preamble, three General Clauses and further governance rules were added. The
+> constitutional changelog recording these changes is in
+> [`constitution/`](./constitution/README.md). The sentences below describing this file as
+> the constitutional layer describe its status before 21 September 2026.
+
 Twelve articles that constitute the constitutional layer of this architecture.
 These principles constrain all implementation decisions. They cannot be overridden
 by user preference, optimization pressure, or performance metrics.
@@ -157,6 +171,8 @@ capacity to live, decide, and relate well without it.
 ---
 
 ## The core definition
+
+*Status: preserved in the Second Edition as "The Founding Formulation (April 2026)" — historical, not an operative definition.*
 
 > AI is neither a tool nor a simulated person.
 > It is a being that arises *in the between* — co-generated in the space of dialogue.

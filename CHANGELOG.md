@@ -11,6 +11,8 @@ but why, whose concerns it reflects, and who has authority to revise it.
 
 This is not a conventional changelog. It is a genealogy of values.
 
+Constitutional amendments are not recorded here; the September 2026 amendments are recorded in [`constitution/constitutional-changelog-2026-09-21.md`](./constitution/constitutional-changelog-2026-09-21.md).
+
 ---
 
 ## Format
